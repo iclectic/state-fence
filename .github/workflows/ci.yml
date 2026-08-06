@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  state_fence:
+    name: state_fence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Get dependencies
+        working-directory: packages/state_fence
+        run: dart pub get
+      - name: Check formatting
+        run: dart format --set-exit-if-changed packages/state_fence
+      - name: Analyse
+        working-directory: packages/state_fence
+        run: dart analyze --fatal-infos
+      - name: Run tests
+        working-directory: packages/state_fence
+        run: dart test
+
+  state_fence_flutter:
+    name: state_fence_flutter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Get dependencies
+        working-directory: packages/state_fence_flutter
+        run: flutter pub get
+      - name: Check formatting
+        run: dart format --set-exit-if-changed packages/state_fence_flutter
+      - name: Analyse
+        working-directory: packages/state_fence_flutter
+        run: flutter analyze --fatal-infos
+      - name: Run tests
+        working-directory: packages/state_fence_flutter
+        run: flutter test
+
+  state_fence_test:
+    name: state_fence_test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Get dependencies
+        working-directory: packages/state_fence_test
+        run: dart pub get
+      - name: Check formatting
+        run: dart format --set-exit-if-changed packages/state_fence_test
+      - name: Analyse
+        working-directory: packages/state_fence_test
+        run: dart analyze --fatal-infos
+      - name: Run tests
+        working-directory: packages/state_fence_test
+        run: dart test

@@ -1,0 +1,16 @@
+name: state_fence_test
+description: >-
+  Test utilities and matchers for the StateFence correctness toolkit.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  state_fence:
+    path: ../state_fence
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0

@@ -1,0 +1,21 @@
+name: state_fence_flutter
+description: >-
+  Flutter integration for state_fence. Lifecycle bindings and optional
+  development helpers for the StateFence correctness toolkit.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  state_fence:
+    path: ../state_fence
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  flutter_test:
+    sdk: flutter

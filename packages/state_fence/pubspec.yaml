@@ -1,0 +1,16 @@
+name: state_fence
+description: >-
+  State-management-neutral correctness toolkit for Dart and Flutter.
+  Detect illegal state transitions, stale asynchronous results and lifecycle misuse.
+version: 0.1.0-dev
+publish_to: none
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  meta: ^1.10.0
+
+dev_dependencies:
+  lints: ^3.0.0
+  test: ^1.24.0
