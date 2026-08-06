@@ -1,0 +1,19 @@
+# Dart and Flutter generated artifacts
+.dart_tool/
+build/
+.packages
+pubspec.lock
+
+# IDE and editor configuration
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+coverage/
+*.log
