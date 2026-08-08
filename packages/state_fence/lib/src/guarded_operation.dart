@@ -1,10 +1,13 @@
 import 'dart:async';
 
+import 'fence_clock.dart';
+import 'fence_event.dart';
 import 'fence_scheduler.dart';
 import 'operation_outcome.dart';
 import 'operation_policy.dart';
 import 'operation_token.dart';
 import 'reporter.dart';
+import 'timeline.dart';
 import 'violation.dart';
 
 /// Guards an asynchronous operation against stale results, duplicate
@@ -27,6 +30,8 @@ class GuardedOperation<T> {
   final OperationTokenGenerator _tokenGenerator;
   final StateFenceReporter _reporter;
   final FenceScheduler _scheduler;
+  final FenceClock _clock;
+  final Timeline? _timeline;
 
   OperationToken? _latestAccepted;
   OperationToken? _inFlight;
@@ -36,7 +41,8 @@ class GuardedOperation<T> {
   ///
   /// [tokenGenerator] controls invocation identity and is injectable for tests.
   /// [reporter] receives timeout and post-dispose violations. [scheduler]
-  /// drives timeouts and is injectable for tests.
+  /// drives timeouts and is injectable for tests. [timeline], when supplied,
+  /// records bounded diagnostic events.
   GuardedOperation({
     required this.name,
     required this.policy,
@@ -44,9 +50,14 @@ class GuardedOperation<T> {
     OperationTokenGenerator? tokenGenerator,
     StateFenceReporter? reporter,
     FenceScheduler? scheduler,
+    Timeline? timeline,
   })  : _tokenGenerator = tokenGenerator ?? MonotonicTokenGenerator(),
         _reporter = reporter ?? const DevNullReporter(),
-        _scheduler = scheduler ?? const RealFenceScheduler();
+        _scheduler = scheduler ?? const RealFenceScheduler(),
+        _clock = scheduler != null
+            ? FenceSchedulerClock(scheduler)
+            : const RealFenceClock(),
+        _timeline = timeline;
 
   /// Whether this operation has been disposed.
   bool get isDisposed => _disposed;
@@ -62,6 +73,13 @@ class GuardedOperation<T> {
     }
 
     final token = _tokenGenerator.next();
+    _timeline?.add(
+      OperationStartedEvent(
+        source: name,
+        timestamp: _clock.now(),
+        token: token,
+      ),
+    );
 
     switch (policy) {
       case OperationPolicy.latestWins:
@@ -82,15 +100,19 @@ class GuardedOperation<T> {
       timerHandle?.cancel();
       if (_disposed) return _disposedOutcome(token: token);
       if (_latestAccepted != token) {
+        _recordStale(token, _latestAccepted!);
         return OperationIgnoredAsStale<T>(token, _latestAccepted!);
       }
+      _recordSuccess(token);
       return OperationSuccess<T>(token, value);
     } catch (error, stackTrace) {
       timerHandle?.cancel();
       if (_disposed) return _disposedOutcome(token: token);
       if (_latestAccepted != token) {
+        _recordStale(token, _latestAccepted!);
         return OperationIgnoredAsStale<T>(token, _latestAccepted!);
       }
+      _recordFailure(token, error);
       return OperationFailure<T>(token, error, stackTrace);
     }
   }
@@ -101,6 +123,14 @@ class GuardedOperation<T> {
   ) async {
     final existing = _inFlight;
     if (existing != null) {
+      _timeline?.add(
+        OperationIgnoredAsDuplicateEvent(
+          source: name,
+          timestamp: _clock.now(),
+          token: token,
+          blockedBy: existing,
+        ),
+      );
       return OperationIgnoredAsDuplicate<T>(token, existing);
     }
     _inFlight = token;
@@ -111,19 +141,55 @@ class GuardedOperation<T> {
       if (_disposed) return _disposedOutcome(token: token);
       if (_inFlight != token) {
         // Should not happen under firstWins, but guard against reentrancy.
+        _recordStale(token, _inFlight ?? token);
         return OperationIgnoredAsStale<T>(token, _inFlight ?? token);
       }
       _inFlight = null;
+      _recordSuccess(token);
       return OperationSuccess<T>(token, value);
     } catch (error, stackTrace) {
       timerHandle?.cancel();
       if (_disposed) return _disposedOutcome(token: token);
       if (_inFlight != token) {
+        _recordStale(token, _inFlight ?? token);
         return OperationIgnoredAsStale<T>(token, _inFlight ?? token);
       }
       _inFlight = null;
+      _recordFailure(token, error);
       return OperationFailure<T>(token, error, stackTrace);
     }
+  }
+
+  void _recordSuccess(OperationToken token) {
+    _timeline?.add(
+      OperationSucceededEvent(
+        source: name,
+        timestamp: _clock.now(),
+        token: token,
+      ),
+    );
+  }
+
+  void _recordFailure(OperationToken token, Object error) {
+    _timeline?.add(
+      OperationFailedEvent(
+        source: name,
+        timestamp: _clock.now(),
+        token: token,
+        errorDescription: error.toString(),
+      ),
+    );
+  }
+
+  void _recordStale(OperationToken token, OperationToken supersededBy) {
+    _timeline?.add(
+      OperationIgnoredAsStaleEvent(
+        source: name,
+        timestamp: _clock.now(),
+        token: token,
+        supersededBy: supersededBy,
+      ),
+    );
   }
 
   FenceTimerHandle? _startTimeout(OperationToken token) {
@@ -136,12 +202,19 @@ class GuardedOperation<T> {
       final stillActive = (current != null && current == token) ||
           (inFlight != null && inFlight == token);
       if (!stillActive) return;
-      _reporter.report(
+      _timeline?.add(
+        OperationTimedOutEvent(
+          source: name,
+          timestamp: _clock.now(),
+          token: token,
+        ),
+      );
+      _safeReport(
         StateFenceViolation(
           fenceName: name,
           previousState: OperationPolicy,
           attemptedState: OperationPolicy,
-          timestamp: _scheduler.now(),
+          timestamp: _clock.now(),
           operation: name,
           reason: 'Operation "$name" timed out after $duration.',
         ),
@@ -151,12 +224,20 @@ class GuardedOperation<T> {
 
   OperationOutcome<T> _disposedOutcome({OperationToken? token}) {
     final effectiveToken = token ?? _tokenGenerator.next();
-    _reporter.report(
+    final now = _clock.now();
+    _timeline?.add(
+      OwnerDisposedEvent(
+        source: name,
+        timestamp: now,
+        operation: name,
+      ),
+    );
+    _safeReport(
       StateFenceViolation(
         fenceName: name,
         previousState: OperationPolicy,
         attemptedState: OperationPolicy,
-        timestamp: _scheduler.now(),
+        timestamp: now,
         operation: name,
         reason: 'Operation "$name" was used after dispose.',
       ),
@@ -177,5 +258,19 @@ class GuardedOperation<T> {
     _disposed = true;
     _latestAccepted = null;
     _inFlight = null;
+    _timeline?.add(
+      OwnerDisposedEvent(
+        source: name,
+        timestamp: _clock.now(),
+      ),
+    );
+  }
+
+  void _safeReport(StateFenceViolation violation) {
+    try {
+      _reporter.report(violation);
+    } catch (_) {
+      // Reporter failures are isolated so timeline recording is not lost.
+    }
   }
 }
