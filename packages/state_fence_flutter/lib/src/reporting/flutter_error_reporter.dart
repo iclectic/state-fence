@@ -11,6 +11,8 @@ class FlutterErrorReporter implements StateFenceReporter {
   /// Creates a reporter that forwards to [FlutterError.reportError].
   const FlutterErrorReporter();
 
+  /// Forwards [violation] to [FlutterError.reportError] as a
+  /// [StateFenceViolationException] with diagnostic properties.
   @override
   void report(StateFenceViolation violation) {
     FlutterError.reportError(
@@ -41,6 +43,7 @@ final class StateFenceViolationException implements Exception {
   /// Creates an exception wrapping [violation].
   const StateFenceViolationException(this.violation);
 
+  /// Returns a string containing the violation reason.
   @override
   String toString() => 'StateFenceViolationException: ${violation.reason}';
 }

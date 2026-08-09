@@ -1,5 +1,4 @@
 import 'package:flutter/widgets.dart';
-import 'package:state_fence/state_fence.dart';
 
 import 'state_fence_owner.dart';
 

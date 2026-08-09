@@ -1,7 +1,8 @@
 /// Redacts sensitive values from metadata before export.
 ///
 /// The default behaviour replaces values whose key matches a known set of
-/// sensitive names. A custom [redactor] callback can override or extend this.
+/// sensitive names. A custom [MetadataRedactor.redactor] callback can override
+/// or extend this.
 typedef Redactor = Object? Function(String key, Object? value);
 
 /// The default set of keys whose values are redacted.

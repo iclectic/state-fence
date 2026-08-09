@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the StateFence packages are documented in this file.
+All notable changes to `state_fence` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,8 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 0.1.0
 
 ### Added
-
-#### state_fence
 
 - `StateFence<S>` with typed transition contracts and `allow<F, T>()` rule syntax.
 - `TransitionResult<S>` sealed hierarchy: `TransitionAccepted<S>` and `TransitionRejected<S>`.
@@ -27,30 +25,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reporter failure isolation: throwing reporters do not prevent timeline recording.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with post-dispose violation reporting.
 - 36 unit tests covering transitions, race conditions, timeouts, disposal, ring-buffer overflow, nested redaction and reporter isolation.
-
-#### state_fence_flutter
-
-- `StateFenceOwner` for explicit lifecycle ownership of fences and operations.
-- `StateFenceStateMixin` for automatic disposal on `State.dispose`.
-- `FlutterErrorReporter` forwarding violations to `FlutterError.reportError`.
-- `StateFenceViolationException` wrapping violations for Flutter's error pipeline.
-- Example application with three failure scenarios: stale search, duplicate submission and stuck loading.
-- 9 widget and unit tests covering ownership, disposal, mixin integration and reporter forwarding.
-
-#### state_fence_test
-
-- Package scaffold with smoke test. Test matchers and scenario helpers are planned for a future release.
-
-### Changed
-
-- Updated `README.md` with quick start, concepts, recipes, limitations and migration policy.
-- Updated `AGENTS.md` with repository layout, commands and definition of done.
-- Strict analysis options (`strict-casts`, `strict-inference`, `strict-raw-types`) applied to all packages.
-
-## 0.1.0-dev
-
-- Repository foundation.
-- Product brief, ecosystem review and provisional API proposal.
-- Architecture decision record stubs.
-- Scaffolding for `state_fence`, `state_fence_flutter` and `state_fence_test`.
-- Strict analysis options and CI workflow.

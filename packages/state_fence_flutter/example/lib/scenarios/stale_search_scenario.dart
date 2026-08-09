@@ -33,17 +33,15 @@ class _StaleSearchScenarioState extends State<StaleSearchScenario>
   );
 
   List<String>? _results;
-  String? _lastQuery;
   String _statusText = 'Type a query to search.';
 
   Future<List<String>> _fakeSearch(String query, Duration delay) async {
-    await Future.delayed(delay);
+    await Future<void>.delayed(delay);
     return List.generate(5, (i) => '$query result ${i + 1}');
   }
 
   Future<void> _runSearch(String query, Duration delay) async {
     setState(() {
-      _lastQuery = query;
       _statusText = 'Searching for "$query"...';
     });
 

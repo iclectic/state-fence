@@ -42,6 +42,7 @@ final class StateFenceViolation {
     required this.reason,
   });
 
+  /// Returns [reason].
   @override
   String toString() => reason;
 }

@@ -12,16 +12,20 @@ final class OperationToken implements Comparable<OperationToken> {
   /// Creates a token with the given [value].
   const OperationToken(this.value);
 
+  /// Compares this token to [other] by [value].
   @override
   int compareTo(OperationToken other) => value.compareTo(other.value);
 
+  /// Whether [other] is an [OperationToken] with the same [value].
   @override
   bool operator ==(Object other) =>
       other is OperationToken && other.value == value;
 
+  /// The hash code of [value].
   @override
   int get hashCode => value.hashCode;
 
+  /// A string representation of this token, such as `OperationToken(3)`.
   @override
   String toString() => 'OperationToken($value)';
 }

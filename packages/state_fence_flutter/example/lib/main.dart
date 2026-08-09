@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:state_fence/state_fence.dart';
-import 'package:state_fence_flutter/state_fence_flutter.dart';
 
 import 'scenarios/duplicate_submission_scenario.dart';
 import 'scenarios/stale_search_scenario.dart';
@@ -72,8 +71,8 @@ class _ScenarioTile extends StatelessWidget {
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => destination),
+        Navigator.of(context).push<Widget>(
+          MaterialPageRoute<Widget>(builder: (_) => destination),
         );
       },
     );

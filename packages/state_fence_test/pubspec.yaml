@@ -1,8 +1,20 @@
 name: state_fence_test
 description: >-
   Test utilities and matchers for the StateFence correctness toolkit.
-version: 0.1.0-dev
+  Provides fake clock support and scenario helpers for deterministic testing
+  of state transitions and guarded operations.
+version: 0.1.0
 publish_to: none
+
+repository: https://github.com/iclectic/state-fence
+issue_tracker: https://github.com/iclectic/state-fence/issues
+
+topics:
+  - state-management
+  - testing
+  - diagnostics
+  - test-utilities
+  - flutter
 
 environment:
   sdk: ^3.0.0
