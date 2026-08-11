@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:state_fence/state_fence.dart';
 
 /// A minimal state hierarchy for the search example.
@@ -79,5 +81,19 @@ void main() async {
   }
   if (slowOutcome case OperationIgnoredAsStale()) {
     print('  Slow result was correctly discarded as stale.');
+  }
+
+  // 5. Timeouts resolve the run future instead of hanging.
+  final guarded = GuardedOperation<String>(
+    name: 'refresh',
+    policy: OperationPolicy.latestWins,
+    timeout: const Duration(milliseconds: 50),
+  );
+
+  // The action never completes, simulating a stuck repository call.
+  final outcome = await guarded.run(() => Completer<String>().future);
+  print('Stuck refresh outcome: ${outcome.runtimeType}');
+  if (outcome case OperationTimedOut(:final timeout)) {
+    print('  Timed out after $timeout without hanging the caller.');
   }
 }

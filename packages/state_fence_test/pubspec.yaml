@@ -20,6 +20,7 @@ environment:
   sdk: ^3.0.0
 
 dependencies:
+  matcher: ^0.12.16
   state_fence:
     path: ../state_fence
 

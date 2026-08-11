@@ -26,6 +26,12 @@ jobs:
       - name: Run tests
         working-directory: packages/state_fence
         run: dart test
+      - name: Run example
+        working-directory: packages/state_fence
+        run: dart run example/state_fence_example.dart
+      - name: Check dartdoc
+        working-directory: packages/state_fence
+        run: dart doc --dry-run
 
   state_fence_flutter:
     name: state_fence_flutter
@@ -46,6 +52,9 @@ jobs:
       - name: Run tests
         working-directory: packages/state_fence_flutter
         run: flutter test
+      - name: Analyse example
+        working-directory: packages/state_fence_flutter/example
+        run: flutter analyze --fatal-infos
 
   state_fence_test:
     name: state_fence_test

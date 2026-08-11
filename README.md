@@ -132,6 +132,44 @@ if (outcome case OperationIgnoredAsDuplicate()) {
 }
 ```
 
+### Timeouts that never hang
+
+When a `timeout` is configured, the `run` future resolves with `OperationTimedOut` as soon as the timeout fires. Callers are never left waiting on a stuck operation, and a late result is discarded automatically.
+
+```dart
+final refresh = GuardedOperation<Feed>(
+  name: 'refresh',
+  policy: OperationPolicy.latestWins,
+  timeout: const Duration(seconds: 10),
+);
+
+final outcome = await refresh.run(() => repository.fetchFeed());
+
+if (outcome case OperationTimedOut(:final timeout)) {
+  emit(FeedState.error('Refresh timed out after $timeout.'));
+}
+```
+
+Under `firstWins`, a timed-out invocation no longer blocks a retry.
+
+## Stuck-State Detection
+
+Declare a maximum duration for transitional states. If the fence stays in the state too long, a `StuckStateViolation` is reported and a `StateStuckEvent` is recorded.
+
+```dart
+final fence = StateFence<FeedState>(
+  name: 'feed',
+  initialState: const Idle(),
+  rules: [...],
+  stuckStateTimeouts: const {
+    Loading: Duration(seconds: 15),
+    Refreshing: Duration(seconds: 10),
+  },
+);
+```
+
+Detection is driven by the injectable `FenceScheduler`, so tests advance fake time instead of waiting.
+
 ## Diagnostic Events and Privacy
 
 Attach a `Timeline` to record bounded diagnostic events. Export them as JSON with automatic redaction of sensitive values.
@@ -216,19 +254,25 @@ final fence = StateFence<MyState>(
 
 ## Testing
 
-StateFence is designed for deterministic testing. Inject a fake clock, scheduler, token generator and collecting reporter.
+StateFence is designed for deterministic testing. The `state_fence_test` package provides readable matchers, a `CollectingReporter` and re-exports the deterministic `FakeFenceScheduler`.
 
 ```dart
 import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_test/state_fence_test.dart';
 import 'package:test/test.dart';
 
-class CollectingReporter implements StateFenceReporter {
-  final List<StateFenceViolation> violations = [];
-  @override
-  void report(StateFenceViolation violation) => violations.add(violation);
-}
-
 void main() {
+  test('declares the expected transitions', () {
+    final fence = StateFence<MyState>(
+      name: 'test',
+      initialState: const Idle(),
+      rules: [allow<Idle, Loading>()],
+    );
+
+    expect(fence, allowsTransition<Idle, Loading>());
+    expect(fence, rejectsTransition<Success, Loading>());
+  });
+
   test('rejects an illegal transition', () {
     final reporter = CollectingReporter();
     final fence = StateFence<MyState>(
@@ -238,10 +282,9 @@ void main() {
       reporter: reporter,
     );
 
-    final result = fence.transition(const Success());
+    fence.transition(const Success());
 
-    expect(result, isA<TransitionRejected<MyState>>());
-    expect(reporter.violations, hasLength(1));
+    expect(reporter.violationsOfType<TransitionViolation>(), hasLength(1));
   });
 
   test('latestWins discards stale results', () async {
@@ -257,35 +300,30 @@ void main() {
     final newerFuture = op.run(() => newer.future);
 
     newer.complete(2);
-    final newerOutcome = await newerFuture;
-    expect(newerOutcome, isA<OperationSuccess<int>>());
+    expect(await newerFuture, isOperationSuccess(value: 2));
 
     older.complete(1);
-    final olderOutcome = await olderFuture;
-    expect(olderOutcome, isA<OperationIgnoredAsStale<int>>());
+    expect(await olderFuture, isIgnoredAsStale);
   });
 
-  test('timeout fires via fake scheduler', () async {
+  test('timeout resolves via fake scheduler', () async {
     final scheduler = FakeFenceScheduler();
-    final reporter = CollectingReporter();
-    final completer = Completer<int>();
-
     final op = GuardedOperation<int>(
       name: 'search',
       policy: OperationPolicy.latestWins,
       timeout: const Duration(seconds: 5),
-      reporter: reporter,
       scheduler: scheduler,
     );
 
-    final future = op.run(() => completer.future);
+    final future = op.run(() => Completer<int>().future);
     scheduler.elapse(const Duration(seconds: 5));
 
-    expect(reporter.violations, hasLength(1));
-    expect(reporter.violations.single.reason, contains('timed out'));
+    expect(await future, isOperationTimedOut);
   });
 }
 ```
+
+For strict tests where any violation should fail immediately, use `ThrowingReporter`: violations raised from synchronous call sites throw, and timeline events are always recorded before the reporter runs.
 
 ## State-Management Recipes
 
@@ -315,7 +353,7 @@ Use `OperationPolicy.firstWins` so repeated taps are ignored while the first req
 
 ### Pull-to-refresh
 
-Use `GuardedOperation` with a `timeout` so a stuck refresh call produces a violation instead of an infinite spinner.
+Use `GuardedOperation` with a `timeout` so a stuck refresh call resolves with `OperationTimedOut` instead of an infinite spinner. Pair it with `stuckStateTimeouts` on the fence to catch stuck states that bypass the operation layer.
 
 ## Limitations and Non-Goals
 
@@ -326,16 +364,16 @@ Use `GuardedOperation` with a `timeout` so a stuck refresh call produces a viola
 - Retry policies with exponential backoff are planned for v0.2.0.
 - Riverpod and BLoC adapter packages are planned for v0.2.0.
 - An in-app inspector is planned for v0.3.0.
-- Dart futures are not cancelable. Timeouts report a violation but do not cancel the underlying future.
+- Dart futures are not cancelable. A timeout resolves the outcome immediately and discards the late result, but the underlying work continues until it settles on its own.
 - `allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `state_fence` | Pure Dart core. Transition rules, guarded operations, diagnostics and redaction. |
+| `state_fence` | Pure Dart core. Transition rules, guarded operations, stuck-state detection, diagnostics and redaction. |
 | `state_fence_flutter` | Flutter integration. Lifecycle ownership and `FlutterErrorReporter`. |
-| `state_fence_test` | Test matchers, fake clock support and scenario helpers. (Placeholder in v0.1.0.) |
+| `state_fence_test` | Matchers, `CollectingReporter`, `ThrowingReporter` and deterministic fakes. |
 
 ## Contribution and Support Policy
 

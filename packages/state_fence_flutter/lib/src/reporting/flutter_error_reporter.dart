@@ -22,13 +22,32 @@ class FlutterErrorReporter implements StateFenceReporter {
         library: 'state_fence',
         context: ErrorDescription(violation.reason),
         informationCollector: () => [
-          DiagnosticsProperty<String>('fence', violation.fenceName),
+          DiagnosticsProperty<String>('source', violation.source),
           DiagnosticsProperty<String>('operation', violation.operation),
-          DiagnosticsProperty<Type>('previousState', violation.previousState),
-          DiagnosticsProperty<Type>('attemptedState', violation.attemptedState),
+          ..._violationProperties(violation),
         ],
       ),
     );
+  }
+
+  List<DiagnosticsNode> _violationProperties(StateFenceViolation violation) {
+    return switch (violation) {
+      TransitionViolation() => [
+          DiagnosticsProperty<Type>('previousState', violation.previousState),
+          DiagnosticsProperty<Type>(
+            'attemptedState',
+            violation.attemptedState,
+          ),
+        ],
+      OperationTimeoutViolation() => [
+          DiagnosticsProperty<Duration>('timeout', violation.timeout),
+        ],
+      StuckStateViolation() => [
+          DiagnosticsProperty<Type>('stuckState', violation.stuckState),
+          DiagnosticsProperty<Duration>('maxDuration', violation.maxDuration),
+        ],
+      UseAfterDisposeViolation() => const [],
+    };
   }
 }
 

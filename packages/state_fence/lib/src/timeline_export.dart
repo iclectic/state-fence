@@ -7,16 +7,21 @@ import 'violation.dart';
 
 /// Exports a [Timeline] as a JSON-encoded string with metadata redaction.
 ///
-/// Events are serialised in insertion order. Each event object includes its
-/// `kind`, `source`, `timestamp` (ISO 8601), optional `operation` and a
-/// redacted `metadata` map. Event-specific fields are included as documented
-/// on each [FenceEvent] subtype.
+/// The result is a JSON object with two fields: `droppedCount`, the number of
+/// events lost to the ring buffer, and `events`, the retained events in
+/// insertion order. Each event object includes its `kind`, `source`,
+/// `timestamp` (ISO 8601), optional `operation` and a redacted `metadata`
+/// map. Event-specific fields are included as documented on each [FenceEvent]
+/// subtype.
 String exportTimelineJson(
   Timeline timeline, {
   MetadataRedactor redactor = const MetadataRedactor(),
 }) {
-  final list = timeline.events.map((e) => _encodeEvent(e, redactor)).toList();
-  return JsonEncoder.withIndent('  ').convert(list);
+  final envelope = <String, Object?>{
+    'droppedCount': timeline.droppedCount,
+    'events': timeline.events.map((e) => _encodeEvent(e, redactor)).toList(),
+  };
+  return JsonEncoder.withIndent('  ').convert(envelope);
 }
 
 Map<String, Object?> _encodeEvent(FenceEvent event, MetadataRedactor redactor) {
@@ -49,6 +54,9 @@ Map<String, Object?> _encodeEvent(FenceEvent event, MetadataRedactor redactor) {
       map['blockedBy'] = event.blockedBy.value;
     case OperationTimedOutEvent():
       map['token'] = event.token.value;
+    case StateStuckEvent():
+      map['stuckState'] = event.stuckState.toString();
+      map['maxDurationMs'] = event.maxDuration.inMilliseconds;
     case OwnerDisposedEvent():
       // No additional fields.
       break;
@@ -61,12 +69,29 @@ Map<String, Object?> _encodeViolation(
   StateFenceViolation violation,
   MetadataRedactor redactor,
 ) {
-  return <String, Object?>{
-    'fenceName': violation.fenceName,
-    'previousState': violation.previousState.toString(),
-    'attemptedState': violation.attemptedState.toString(),
+  final map = <String, Object?>{
+    'source': violation.source,
     'reason': violation.reason,
     if (violation.operation != null) 'operation': violation.operation,
     'safeMetadata': redactor.redact(violation.safeMetadata),
   };
+
+  switch (violation) {
+    case TransitionViolation():
+      map['type'] = 'transition';
+      map['previousState'] = violation.previousState.toString();
+      map['attemptedState'] = violation.attemptedState.toString();
+    case OperationTimeoutViolation():
+      map['type'] = 'operationTimeout';
+      map['token'] = violation.token.value;
+      map['timeoutMs'] = violation.timeout.inMilliseconds;
+    case StuckStateViolation():
+      map['type'] = 'stuckState';
+      map['stuckState'] = violation.stuckState.toString();
+      map['maxDurationMs'] = violation.maxDuration.inMilliseconds;
+    case UseAfterDisposeViolation():
+      map['type'] = 'useAfterDispose';
+  }
+
+  return map;
 }

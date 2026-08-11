@@ -100,9 +100,10 @@ void main() {
       fence.transition(const _Other());
 
       expect(reporter.violations, hasLength(1));
-      expect(reporter.violations.single.fenceName, 'search');
-      expect(reporter.violations.single.previousState, _Idle);
-      expect(reporter.violations.single.attemptedState, _Other);
+      final violation = reporter.violations.single as TransitionViolation;
+      expect(violation.source, 'search');
+      expect(violation.previousState, _Idle);
+      expect(violation.attemptedState, _Other);
     });
 
     test('violations include operation and metadata', () {
@@ -138,9 +139,10 @@ void main() {
 
       expect(result, isA<TransitionRejected<_SearchState>>());
       final rejected = result as TransitionRejected<_SearchState>;
-      expect(rejected.violation.reason, contains('not allowed'));
-      expect(rejected.violation.previousState, _Idle);
-      expect(rejected.violation.attemptedState, _Other);
+      final violation = rejected.violation as TransitionViolation;
+      expect(violation.reason, contains('not allowed'));
+      expect(violation.previousState, _Idle);
+      expect(violation.attemptedState, _Other);
     });
 
     test('timestamp is within the test run', () {
@@ -170,6 +172,118 @@ void main() {
 
       final metadata = reporter.violations.single.safeMetadata;
       expect(() => metadata['query'] = 'changed', throwsUnsupportedError);
+    });
+  });
+
+  group('StateFence.dispose', () {
+    test('transition after dispose reports UseAfterDisposeViolation', () {
+      final reporter = _CollectingReporter();
+      final fence = _createFence(reporter: reporter)..dispose();
+
+      final result = fence.transition(const _Loading());
+
+      expect(result, isA<TransitionRejected<_SearchState>>());
+      expect(reporter.violations.single, isA<UseAfterDisposeViolation>());
+      expect(fence.isDisposed, isTrue);
+    });
+
+    test('dispose is idempotent and records one OwnerDisposedEvent', () {
+      final timeline = Timeline(capacity: 10);
+      final fence = StateFence<_SearchState>(
+        name: 'search',
+        initialState: const _Idle(),
+        rules: [allow<_Idle, _Loading>()],
+        timeline: timeline,
+      );
+
+      fence.dispose();
+      fence.dispose();
+
+      expect(timeline.eventsOfType<OwnerDisposedEvent>(), hasLength(1));
+    });
+  });
+
+  group('StateFence stuck-state detection', () {
+    test('reports a StuckStateViolation when a state exceeds its maximum', () {
+      final reporter = _CollectingReporter();
+      final scheduler = FakeFenceScheduler();
+      final timeline = Timeline(capacity: 10);
+
+      final fence = StateFence<_SearchState>(
+        name: 'search',
+        initialState: const _Idle(),
+        rules: [allow<_Idle, _Loading>(), allow<_Loading, _Data>()],
+        reporter: reporter,
+        scheduler: scheduler,
+        timeline: timeline,
+        stuckStateTimeouts: const {_Loading: Duration(seconds: 10)},
+      );
+
+      fence.transition(const _Loading());
+      scheduler.elapse(const Duration(seconds: 10));
+
+      final violation = reporter.violations.single as StuckStateViolation;
+      expect(violation.stuckState, _Loading);
+      expect(violation.maxDuration, const Duration(seconds: 10));
+      expect(timeline.eventsOfType<StateStuckEvent>(), hasLength(1));
+    });
+
+    test('does not report when the state is left before the maximum', () {
+      final reporter = _CollectingReporter();
+      final scheduler = FakeFenceScheduler();
+
+      final fence = StateFence<_SearchState>(
+        name: 'search',
+        initialState: const _Idle(),
+        rules: [allow<_Idle, _Loading>(), allow<_Loading, _Data>()],
+        reporter: reporter,
+        scheduler: scheduler,
+        stuckStateTimeouts: const {_Loading: Duration(seconds: 10)},
+      );
+
+      fence.transition(const _Loading());
+      scheduler.elapse(const Duration(seconds: 5));
+      fence.transition(const _Data([]));
+      scheduler.elapse(const Duration(seconds: 10));
+
+      expect(reporter.violations, isEmpty);
+    });
+
+    test('monitors the initial state when it has a declared timeout', () {
+      final reporter = _CollectingReporter();
+      final scheduler = FakeFenceScheduler();
+
+      StateFence<_SearchState>(
+        name: 'search',
+        initialState: const _Loading(),
+        rules: [allow<_Loading, _Data>()],
+        reporter: reporter,
+        scheduler: scheduler,
+        stuckStateTimeouts: const {_Loading: Duration(seconds: 3)},
+      );
+
+      scheduler.elapse(const Duration(seconds: 3));
+
+      expect(reporter.violations.single, isA<StuckStateViolation>());
+    });
+
+    test('does not report after the fence is disposed', () {
+      final reporter = _CollectingReporter();
+      final scheduler = FakeFenceScheduler();
+
+      final fence = StateFence<_SearchState>(
+        name: 'search',
+        initialState: const _Loading(),
+        rules: [allow<_Loading, _Data>()],
+        reporter: reporter,
+        scheduler: scheduler,
+        stuckStateTimeouts: const {_Loading: Duration(seconds: 3)},
+      );
+
+      fence.dispose();
+      scheduler.elapse(const Duration(seconds: 3));
+
+      expect(reporter.violations, isEmpty);
     });
   });
 }

@@ -15,6 +15,10 @@ final class TransitionAccepted<S> extends TransitionResult<S> {
 
   /// Creates an accepted result containing [state].
   const TransitionAccepted(this.state) : super._();
+
+  /// A string representation, such as `TransitionAccepted<S>(Loading)`.
+  @override
+  String toString() => 'TransitionAccepted<$S>(${state.runtimeType})';
 }
 
 /// A state transition that was rejected by the fence rules.
@@ -25,4 +29,8 @@ final class TransitionRejected<S> extends TransitionResult<S> {
 
   /// Creates a rejected result containing [violation].
   const TransitionRejected(this.violation) : super._();
+
+  /// A string representation including the violation reason.
+  @override
+  String toString() => 'TransitionRejected<$S>(${violation.reason})';
 }

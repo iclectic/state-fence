@@ -45,11 +45,26 @@ class MetadataRedactor {
 
   /// Returns a redacted copy of [value], recursing into maps and lists.
   ///
-  /// Top-level scalars are returned unchanged. Map keys are matched
-  /// case-insensitively against [sensitiveKeys].
+  /// Map keys are matched case-insensitively against [sensitiveKeys]. A
+  /// sensitive key redacts its entire value, including nested maps and
+  /// lists, so structured secrets cannot leak through recursion. Top-level
+  /// scalars are returned unchanged.
   Object? redact(Object? value) => _redactValue(null, value);
 
   Object? _redactValue(String? key, Object? value) {
+    if (key != null) {
+      final custom = redactor;
+      if (custom != null) {
+        final customResult = custom(key, value);
+        if (customResult != null) {
+          return customResult;
+        }
+      }
+      if (_isSensitive(key)) {
+        // A sensitive key redacts its whole subtree, not only scalars.
+        return redactedPlaceholder;
+      }
+    }
     if (value is Map<String, Object?>) {
       return _redactMap(value);
     }
@@ -59,7 +74,7 @@ class MetadataRedactor {
     if (value is List) {
       return _redactList(value);
     }
-    return _redactScalar(key, value);
+    return value;
   }
 
   Map<String, Object?> _redactMap(Map<String, Object?> map) {
@@ -74,20 +89,8 @@ class MetadataRedactor {
     return list.map((item) => _redactValue(null, item)).toList();
   }
 
-  Object? _redactScalar(String? key, Object? value) {
-    if (key != null) {
-      final custom = redactor;
-      if (custom != null) {
-        final customResult = custom(key, value);
-        if (customResult != null) {
-          return customResult;
-        }
-      }
-      final lower = key.toLowerCase();
-      if (sensitiveKeys.any((s) => s.toLowerCase() == lower)) {
-        return redactedPlaceholder;
-      }
-    }
-    return value;
+  bool _isSensitive(String key) {
+    final lower = key.toLowerCase();
+    return sensitiveKeys.any((s) => s.toLowerCase() == lower);
   }
 }

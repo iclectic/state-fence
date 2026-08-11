@@ -65,13 +65,14 @@ void main() {
       );
     });
 
-    test('register rejects non-fence, non-operation objects', () {
+    test('register accepts any Disposable and disposes it', () {
       final owner = StateFenceOwner();
+      final resource = _FakeDisposable();
 
-      expect(
-        () => owner.register('not a fence'),
-        throwsArgumentError,
-      );
+      owner.register<Disposable>(resource);
+      owner.dispose();
+
+      expect(resource.isDisposed, isTrue);
     });
   });
 
@@ -113,8 +114,8 @@ void main() {
 
       try {
         const reporter = FlutterErrorReporter();
-        final violation = StateFenceViolation(
-          fenceName: 'test',
+        final violation = TransitionViolation(
+          source: 'test',
           previousState: String,
           attemptedState: int,
           timestamp: DateTime(2026, 1, 1),
@@ -132,6 +133,16 @@ void main() {
       }
     });
   });
+}
+
+class _FakeDisposable implements Disposable {
+  bool _disposed = false;
+
+  @override
+  bool get isDisposed => _disposed;
+
+  @override
+  void dispose() => _disposed = true;
 }
 
 class _TestWidget extends StatefulWidget {

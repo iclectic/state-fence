@@ -9,4 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Package scaffold with smoke test. Test matchers and scenario helpers are planned for a future release.
+- Transition matchers: `allowsTransition<F, T>()` and `rejectsTransition<F, T>()`.
+- Outcome matchers: `isOperationSuccess()`, `isOperationFailure`, `isIgnoredAsStale`, `isIgnoredAsDuplicate` and `isOperationTimedOut`.
+- `CollectingReporter` with type filtering and `hasViolations`.
+- `ThrowingReporter` for strict tests.
+- `hasNoViolations` matcher.
+- Re-exports of `FakeFenceScheduler`, `FenceSchedulerClock` and `MonotonicTokenGenerator`.

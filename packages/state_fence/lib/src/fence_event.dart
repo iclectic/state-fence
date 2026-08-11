@@ -195,6 +195,28 @@ final class OperationTimedOutEvent extends FenceEvent {
   String get kind => 'operationTimedOut';
 }
 
+/// A state remained active for longer than its declared maximum duration.
+@immutable
+final class StateStuckEvent extends FenceEvent {
+  /// The runtime type of the state that became stuck.
+  final Type stuckState;
+
+  /// The declared maximum duration that was exceeded.
+  final Duration maxDuration;
+
+  const StateStuckEvent({
+    required super.source,
+    required super.timestamp,
+    super.operation,
+    super.metadata,
+    required this.stuckState,
+    required this.maxDuration,
+  }) : super._();
+
+  @override
+  String get kind => 'stateStuck';
+}
+
 /// A fence or operation was disposed.
 @immutable
 final class OwnerDisposedEvent extends FenceEvent {

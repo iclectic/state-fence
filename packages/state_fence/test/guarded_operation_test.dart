@@ -119,7 +119,7 @@ void main() {
       expect(olderOutcome, isA<OperationIgnoredAsStale<int>>());
     });
 
-    test('times out via the scheduler and reports a violation', () async {
+    test('resolves with OperationTimedOut when the timeout fires', () async {
       final reporter = _CollectingReporter();
       final scheduler = FakeFenceScheduler();
       final completer = Completer<int>();
@@ -136,12 +136,41 @@ void main() {
 
       scheduler.elapse(const Duration(seconds: 5));
       expect(reporter.violations, hasLength(1));
-      expect(reporter.violations.single.reason, contains('timed out'));
+      final violation = reporter.violations.single as OperationTimeoutViolation;
+      expect(violation.reason, contains('timed out'));
+      expect(violation.timeout, const Duration(seconds: 5));
 
-      completer.complete(99);
+      // The run future resolves immediately with a timed-out outcome, even
+      // though the underlying action never completes.
       final outcome = await future;
-      // The result still resolves; the timeout only reports a violation.
-      expect(outcome, isA<OperationSuccess<int>>());
+      expect(outcome, isA<OperationTimedOut<int>>());
+      expect(
+        (outcome as OperationTimedOut<int>).timeout,
+        const Duration(seconds: 5),
+      );
+    });
+
+    test('discards a late result that arrives after the timeout', () async {
+      final scheduler = FakeFenceScheduler();
+      final completer = Completer<int>();
+
+      final op = GuardedOperation<int>(
+        name: 'search',
+        policy: OperationPolicy.latestWins,
+        timeout: const Duration(seconds: 5),
+        scheduler: scheduler,
+      );
+
+      final future = op.run(() => completer.future);
+      scheduler.elapse(const Duration(seconds: 5));
+
+      final outcome = await future;
+      expect(outcome, isA<OperationTimedOut<int>>());
+
+      // The late completion is discarded silently; the outcome is unchanged.
+      completer.complete(99);
+      await Future<void>.delayed(Duration.zero);
+      expect(await future, same(outcome));
     });
 
     test('does not time out when the result arrives first', () async {
@@ -212,6 +241,28 @@ void main() {
 
       final second = await op.run(() async => 2);
       expect(second, isA<OperationSuccess<int>>());
+    });
+
+    test('allows a retry after a timed-out invocation', () async {
+      final scheduler = FakeFenceScheduler();
+      final stuck = Completer<int>();
+
+      final op = GuardedOperation<int>(
+        name: 'submit',
+        policy: OperationPolicy.firstWins,
+        timeout: const Duration(seconds: 5),
+        scheduler: scheduler,
+      );
+
+      final future = op.run(() => stuck.future);
+      scheduler.elapse(const Duration(seconds: 5));
+
+      final timedOut = await future;
+      expect(timedOut, isA<OperationTimedOut<int>>());
+
+      // The timed-out invocation no longer blocks a retry.
+      final retry = await op.run(() async => 2);
+      expect(retry, isA<OperationSuccess<int>>());
     });
   });
 

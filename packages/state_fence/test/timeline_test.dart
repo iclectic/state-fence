@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:state_fence/state_fence.dart';
@@ -162,6 +163,34 @@ void main() {
       expect(redactor.redact(42), 42);
       expect(redactor.redact(null), null);
     });
+
+    test('redacts an entire map subtree under a sensitive key', () {
+      const redactor = MetadataRedactor();
+
+      final result = redactor.redact({
+        'token': {'inner': 'must not leak'},
+        'safe': {'inner': 'fine'},
+      });
+
+      expect(result, {
+        'token': '<redacted>',
+        'safe': {'inner': 'fine'},
+      });
+    });
+
+    test('redacts an entire list subtree under a sensitive key', () {
+      const redactor = MetadataRedactor();
+
+      final result = redactor.redact({
+        'secret': ['a', 'b'],
+        'items': ['x', 'y'],
+      });
+
+      expect(result, {
+        'secret': '<redacted>',
+        'items': ['x', 'y'],
+      });
+    });
   });
 
   group('exportTimelineJson', () {
@@ -179,8 +208,10 @@ void main() {
       );
 
       final json = exportTimelineJson(timeline);
-      final decoded = jsonDecode(json) as List;
+      final envelope = jsonDecode(json) as Map;
+      final decoded = envelope['events'] as List;
 
+      expect(envelope['droppedCount'], 0);
       expect(decoded, hasLength(1));
       final event = decoded.single as Map;
       expect(event['kind'], 'transitionAccepted');
@@ -197,22 +228,23 @@ void main() {
         TransitionRejectedEvent(
           source: 'checkout',
           timestamp: DateTime(2026, 1, 1),
-          violation: StateFenceViolation(
-            fenceName: 'checkout',
+          violation: TransitionViolation(
+            source: 'checkout',
             previousState: int,
             attemptedState: String,
             timestamp: DateTime(2026, 1, 1),
             reason: 'illegal',
-            safeMetadata: {'token': 'abc', 'amount': 100},
+            safeMetadata: const {'token': 'abc', 'amount': 100},
           ),
         ),
       );
 
       final json = exportTimelineJson(timeline);
-      final decoded = jsonDecode(json) as List;
-      final event = decoded.single as Map;
+      final envelope = jsonDecode(json) as Map;
+      final event = (envelope['events'] as List).single as Map;
       final violation = event['violation'] as Map;
 
+      expect(violation['type'], 'transition');
       expect(violation['safeMetadata'], {
         'token': '<redacted>',
         'amount': 100,
@@ -247,7 +279,8 @@ void main() {
       );
 
       final json = exportTimelineJson(timeline);
-      final decoded = jsonDecode(json) as List;
+      final envelope = jsonDecode(json) as Map;
+      final decoded = envelope['events'] as List;
 
       expect(decoded, hasLength(3));
       expect((decoded[0] as Map)['kind'], 'operationStarted');
@@ -256,10 +289,27 @@ void main() {
       expect((decoded[1] as Map)['supersededBy'], 6);
       expect((decoded[2] as Map)['kind'], 'operationTimedOut');
     });
+
+    test('exports droppedCount when the ring buffer overflows', () {
+      final timeline = Timeline(capacity: 1);
+      for (var i = 0; i < 3; i++) {
+        timeline.add(
+          OperationStartedEvent(
+            source: 'search',
+            timestamp: DateTime(2026, 1, 1, 0, 0, i),
+            token: OperationToken(i),
+          ),
+        );
+      }
+
+      final envelope = jsonDecode(exportTimelineJson(timeline)) as Map;
+      expect(envelope['droppedCount'], 2);
+      expect(envelope['events'], hasLength(1));
+    });
   });
 
-  group('reporter failure isolation', () {
-    test('a throwing reporter does not prevent timeline recording', () {
+  group('throwing reporters', () {
+    test('timeline records the event before the reporter throws', () {
       final timeline = Timeline(capacity: 10);
       final fence = StateFence<int>(
         name: 'fence',
@@ -269,11 +319,30 @@ void main() {
         timeline: timeline,
       );
 
-      // This transition is invalid (int -> int) and triggers the reporter.
-      fence.transition(1);
+      // This transition is invalid (int -> int). The throwing reporter
+      // enables strict mode, so the call throws, but the timeline event is
+      // recorded first.
+      expect(() => fence.transition(1), throwsStateError);
 
       expect(timeline.length, 1);
       expect(timeline.events.single, isA<TransitionRejectedEvent>());
+    });
+
+    test('a throwing reporter cannot hang an operation timeout', () async {
+      final scheduler = FakeFenceScheduler();
+      final op = GuardedOperation<int>(
+        name: 'op',
+        policy: OperationPolicy.latestWins,
+        timeout: const Duration(seconds: 1),
+        reporter: _ThrowingReporter(),
+        scheduler: scheduler,
+      );
+
+      final future = op.run(() => Completer<int>().future);
+      scheduler.elapse(const Duration(seconds: 1));
+
+      // The outcome resolves even though the reporter throws in the timer.
+      expect(await future, isA<OperationTimedOut<int>>());
     });
   });
 }

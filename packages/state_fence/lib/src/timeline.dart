@@ -22,6 +22,14 @@ class Timeline {
   /// The events currently retained, in insertion order.
   List<FenceEvent> get events => List.unmodifiable(_events);
 
+  /// The retained events produced by [source], in insertion order.
+  List<FenceEvent> eventsFor(String source) =>
+      _events.where((e) => e.source == source).toList();
+
+  /// The retained events of type [E], in insertion order.
+  List<E> eventsOfType<E extends FenceEvent>() =>
+      _events.whereType<E>().toList();
+
   /// The number of events that have been dropped because the buffer was full.
   int get droppedCount => _droppedCount;
 

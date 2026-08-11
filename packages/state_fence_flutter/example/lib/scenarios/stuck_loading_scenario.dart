@@ -34,7 +34,6 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
 
   String _statusText = 'Ready to refresh.';
   bool _isLoading = false;
-  final Completer<String> _neverCompletes = Completer<String>();
 
   Future<void> _startRefresh() async {
     setState(() {
@@ -42,7 +41,10 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
       _statusText = 'Loading... (will time out)';
     });
 
-    final outcome = await _refresh.run(() => _neverCompletes.future);
+    // This repository call never completes. The GuardedOperation timeout
+    // resolves the future with OperationTimedOut after 3 seconds, so the UI
+    // is never stuck.
+    final outcome = await _refresh.run(() => Completer<String>().future);
 
     if (!mounted) return;
 
@@ -50,9 +52,13 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
       _isLoading = false;
     });
 
-    if (outcome case OperationFailure(:final error)) {
+    if (outcome case OperationTimedOut(:final timeout)) {
       setState(() {
-        _statusText = 'Timed out: $error';
+        _statusText = 'Refresh timed out after $timeout. Try again.';
+      });
+    } else if (outcome case OperationSuccess(:final value)) {
+      setState(() {
+        _statusText = value;
       });
     }
   }
