@@ -1,9 +1,7 @@
 name: state_fence_flutter
 description: >-
-  Flutter integration for state_fence. Provides lifecycle ownership for
-  StateFence and GuardedOperation instances via StateFenceOwner and
-  StateFenceStateMixin, plus a FlutterErrorReporter that forwards violations
-  into Flutter's standard error reporting pipeline.
+  Flutter integration for state_fence: lifecycle ownership for fences and
+  guarded operations, plus a reporter that forwards violations to FlutterError.
 version: 0.1.0
 
 repository: https://github.com/iclectic/state-fence
