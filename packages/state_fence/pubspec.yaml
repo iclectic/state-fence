@@ -7,7 +7,6 @@ description: >-
   privacy-aware redaction, and injectable time and reporting for deterministic
   tests.
 version: 0.1.0
-publish_to: none
 
 repository: https://github.com/iclectic/state-fence
 issue_tracker: https://github.com/iclectic/state-fence/issues

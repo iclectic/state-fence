@@ -5,7 +5,6 @@ description: >-
   StateFenceStateMixin, plus a FlutterErrorReporter that forwards violations
   into Flutter's standard error reporting pipeline.
 version: 0.1.0
-publish_to: none
 
 repository: https://github.com/iclectic/state-fence
 issue_tracker: https://github.com/iclectic/state-fence/issues
@@ -24,10 +23,16 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  state_fence:
-    path: ../state_fence
+  state_fence: ^0.1.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
+
+# Resolve the sibling package from the local path during monorepo
+# development. Consumers ignore dependency_overrides, and the hosted
+# constraint above is what is used once the package is published.
+dependency_overrides:
+  state_fence:
+    path: ../state_fence

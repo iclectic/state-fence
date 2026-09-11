@@ -11,12 +11,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  state_fence:
-    path: ../../state_fence
-  state_fence_flutter:
-    path: ../
+  state_fence: ^0.1.0
+  state_fence_flutter: ^0.1.0
 
 dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
+
+# This example is never published (publish_to: none). The overrides make it
+# build against the local packages during monorepo development.
+dependency_overrides:
+  state_fence:
+    path: ../../state_fence
+  state_fence_flutter:
+    path: ../
