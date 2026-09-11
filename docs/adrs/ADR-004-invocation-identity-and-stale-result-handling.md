@@ -2,13 +2,13 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
 Guarded operations must be able to identify which async invocation produced a result. This identity is necessary to discard results from older invocations when a newer one has already been accepted.
 
-## Proposed Decision
+## Decision
 
 Each `GuardedOperation.run()` call generates an `OperationToken`. The token is a monotonic, unique identifier produced by an injectable token generator. The operation accepts only the result whose token matches the newest accepted token. Results from older tokens produce `OperationIgnoredAsStale`.
 

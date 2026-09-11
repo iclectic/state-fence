@@ -27,10 +27,3 @@ dev_dependencies:
   flutter_lints: ^3.0.0
   flutter_test:
     sdk: flutter
-
-# Resolve the sibling package from the local path during monorepo
-# development. Consumers ignore dependency_overrides, and the hosted
-# constraint above is what is used once the package is published.
-dependency_overrides:
-  state_fence:
-    path: ../state_fence

@@ -42,6 +42,7 @@ final class TransitionAcceptedEvent extends FenceEvent {
   /// The runtime type of the new state.
   final Type toState;
 
+  /// Creates an accepted-transition event from [fromState] to [toState].
   const TransitionAcceptedEvent({
     required super.source,
     required super.timestamp,
@@ -61,6 +62,7 @@ final class TransitionRejectedEvent extends FenceEvent {
   /// The violation describing why the transition was rejected.
   final StateFenceViolation violation;
 
+  /// Creates a rejected-transition event describing [violation].
   const TransitionRejectedEvent({
     required super.source,
     required super.timestamp,
@@ -79,6 +81,7 @@ final class OperationStartedEvent extends FenceEvent {
   /// The token identifying the invocation.
   final OperationToken token;
 
+  /// Creates a started event for the invocation identified by [token].
   const OperationStartedEvent({
     required super.source,
     required super.timestamp,
@@ -97,6 +100,7 @@ final class OperationSucceededEvent extends FenceEvent {
   /// The token identifying the invocation.
   final OperationToken token;
 
+  /// Creates a succeeded event for the invocation identified by [token].
   const OperationSucceededEvent({
     required super.source,
     required super.timestamp,
@@ -118,6 +122,7 @@ final class OperationFailedEvent extends FenceEvent {
   /// A short description of the error. The full error object is not captured.
   final String errorDescription;
 
+  /// Creates a failed event for [token] described by [errorDescription].
   const OperationFailedEvent({
     required super.source,
     required super.timestamp,
@@ -141,6 +146,7 @@ final class OperationIgnoredAsStaleEvent extends FenceEvent {
   /// The token of the newer invocation that superseded this one.
   final OperationToken supersededBy;
 
+  /// Creates a stale-ignored event for [token], superseded by [supersededBy].
   const OperationIgnoredAsStaleEvent({
     required super.source,
     required super.timestamp,
@@ -164,6 +170,7 @@ final class OperationIgnoredAsDuplicateEvent extends FenceEvent {
   /// The token of the in-flight invocation that took precedence.
   final OperationToken blockedBy;
 
+  /// Creates a duplicate-ignored event for [token], blocked by [blockedBy].
   const OperationIgnoredAsDuplicateEvent({
     required super.source,
     required super.timestamp,
@@ -183,6 +190,7 @@ final class OperationTimedOutEvent extends FenceEvent {
   /// The token identifying the invocation that timed out.
   final OperationToken token;
 
+  /// Creates a timed-out event for the invocation identified by [token].
   const OperationTimedOutEvent({
     required super.source,
     required super.timestamp,
@@ -204,6 +212,7 @@ final class StateStuckEvent extends FenceEvent {
   /// The declared maximum duration that was exceeded.
   final Duration maxDuration;
 
+  /// Creates a stuck-state event for [stuckState] exceeding [maxDuration].
   const StateStuckEvent({
     required super.source,
     required super.timestamp,
@@ -220,6 +229,7 @@ final class StateStuckEvent extends FenceEvent {
 /// A fence or operation was disposed.
 @immutable
 final class OwnerDisposedEvent extends FenceEvent {
+  /// Creates a disposal event for the fence or operation named [source].
   const OwnerDisposedEvent({
     required super.source,
     required super.timestamp,

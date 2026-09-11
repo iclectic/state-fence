@@ -1,0 +1,5 @@
+# Local monorepo path overrides must never ship in the published archive.
+# A relative path override inside a published package cannot be resolved once
+# the archive is extracted on its own, which breaks `dart pub get` for pub.dev
+# analysis and for anyone inspecting the package.
+pubspec_overrides.yaml

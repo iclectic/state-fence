@@ -46,8 +46,10 @@ class GuardedOperation<T> implements Disposable {
   ///
   /// [tokenGenerator] controls invocation identity and is injectable for tests.
   /// [reporter] receives timeout and post-dispose violations. [scheduler]
-  /// drives timeouts and is injectable for tests. [timeline], when supplied,
-  /// records bounded diagnostic events.
+  /// drives timeouts and is injectable for tests. [clock] controls timestamps;
+  /// when omitted it follows [scheduler] if one was supplied, so a fake
+  /// scheduler yields consistent timestamps without extra wiring. [timeline],
+  /// when supplied, records bounded diagnostic events.
   GuardedOperation({
     required this.name,
     required this.policy,
@@ -55,13 +57,15 @@ class GuardedOperation<T> implements Disposable {
     OperationTokenGenerator? tokenGenerator,
     StateFenceReporter? reporter,
     FenceScheduler? scheduler,
+    FenceClock? clock,
     Timeline? timeline,
   })  : _tokenGenerator = tokenGenerator ?? MonotonicTokenGenerator(),
         _reporter = reporter ?? const DevNullReporter(),
         _scheduler = scheduler ?? const RealFenceScheduler(),
-        _clock = scheduler != null
-            ? FenceSchedulerClock(scheduler)
-            : const RealFenceClock(),
+        _clock = clock ??
+            (scheduler != null
+                ? FenceSchedulerClock(scheduler)
+                : const RealFenceClock()),
         _timeline = timeline;
 
   /// Whether this operation has been disposed.

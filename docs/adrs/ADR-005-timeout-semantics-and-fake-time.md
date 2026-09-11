@@ -2,13 +2,13 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
 Stuck-state detection must be testable without waiting for real wall-clock time. The package needs a clock and a scheduler abstraction.
 
-## Proposed Decision
+## Decision
 
 Introduce `FenceClock` and `FenceScheduler` interfaces. The default implementation uses `DateTime.now()` and real timers. Tests provide fake implementations that can advance time and trigger scheduled callbacks deterministically.
 

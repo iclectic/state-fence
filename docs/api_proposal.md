@@ -1,6 +1,12 @@
-# StateFence Provisional API Proposal
+# StateFence API Proposal
 
-This document compares two public API shapes for transition contracts and guarded operations. Both are provisional. The recommended shape will be implemented in Phase 2 only after review.
+> **Status: resolved and superseded by the shipped API.**
+>
+> This is a historical record of the design comparison made before 0.1.0. Every recommendation below was accepted and implemented, so the document is kept for the reasoning rather than as a reference. Details here have since drifted from the code: the violation model names its origin `source` rather than `fenceName`, `TransitionRule` takes `from` and `to` arguments behind the `allow<F, T>()` helper, and resources are registered with `fenceOwner` instead of being disposed by hand.
+>
+> For the current API, read the [README](../README.md) and the published dartdoc.
+
+This document compares two public API shapes for transition contracts and guarded operations.
 
 ## 1. Transition Contracts
 
@@ -173,6 +179,8 @@ class _SearchScreenState extends State<SearchScreen>
 
 For v0.1.0 the owner is a thin wrapper; the diagnostic event is recorded in the core package.
 
-## 5. Provisional Status
+## 5. Outcome
 
-All API shapes in this document are provisional. Phase 2 should implement transition contracts only. Guarded operations, Flutter integration and test matchers are out of scope for Phase 2 and must not be implemented before the transition-contract API is reviewed.
+Shape A was accepted for both transition contracts and guarded operations. Transition contracts landed first, followed by guarded operations, the Flutter integration and the test matchers, all of which ship in 0.1.0.
+
+Two items from this document remain deliberately unimplemented and are tracked as non-goals in the README: policies that carry their own configuration (Shape B for operations), and rule-level conditional guards. Both would be considered in v0.2.0 alongside `restartable`, `sequential` and `parallel`.

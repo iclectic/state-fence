@@ -40,6 +40,7 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
 
   bool _loading = false;
   String? _statusText;
+  String _statusLabel = 'Idle';
   StatusTone _tone = StatusTone.neutral;
 
   Future<void> _startRefresh() async {
@@ -55,13 +56,24 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
     if (!mounted) return;
     setState(() {
       _loading = false;
-      if (outcome case OperationTimedOut(:final timeout)) {
-        _tone = StatusTone.warning;
-        _statusText = 'Refresh timed out after ${timeout.inSeconds}s. '
-            'The UI recovered instead of hanging.';
-      } else if (outcome case OperationSuccess(:final value)) {
-        _tone = StatusTone.success;
-        _statusText = value;
+      switch (outcome) {
+        case OperationTimedOut(:final timeout):
+          _tone = StatusTone.warning;
+          _statusLabel = 'Timed out';
+          _statusText = 'Refresh timed out after ${timeout.inSeconds}s. '
+              'The UI recovered instead of hanging.';
+        case OperationSuccess(:final value):
+          _tone = StatusTone.success;
+          _statusLabel = 'Succeeded';
+          _statusText = value;
+        case OperationFailure(:final error):
+          _tone = StatusTone.error;
+          _statusLabel = 'Failed';
+          _statusText = 'Refresh failed: $error';
+        default:
+          _tone = StatusTone.neutral;
+          _statusLabel = 'Ignored';
+          _statusText = 'Refresh outcome: $outcome';
       }
     });
   }
@@ -116,7 +128,7 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
                       : Column(
                           children: [
                             StatusPill(
-                              label: 'Timed out',
+                              label: _statusLabel,
                               tone: _tone,
                               icon: Icons.timer_off_outlined,
                             ),

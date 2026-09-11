@@ -178,7 +178,12 @@ class StateFence<S> implements Disposable {
 
   void _armStuckTimer(Type stateType) {
     final maxDuration = stuckStateTimeouts[stateType];
-    if (maxDuration == null) return;
+    if (maxDuration == null) {
+      // Drop the reference to the cancelled timer of the previous state so a
+      // long-lived fence does not retain it.
+      _stuckTimer = null;
+      return;
+    }
     _stuckTimer = _scheduler.timer(maxDuration, () {
       if (_disposed || _currentState.runtimeType != stateType) return;
       final now = _clock.now();

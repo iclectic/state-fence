@@ -13,6 +13,8 @@ Provides:
 ## Quick Start
 
 ```dart
+import 'dart:async';
+
 import 'package:state_fence/state_fence.dart';
 import 'package:state_fence_test/state_fence_test.dart';
 import 'package:test/test.dart';

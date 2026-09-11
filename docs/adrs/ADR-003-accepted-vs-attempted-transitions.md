@@ -2,13 +2,13 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
 A state fence must decide whether a requested transition is allowed. The public API must expose both the accepted state and a structured record of any rejection.
 
-## Proposed Decision
+## Decision
 
 A `transition` call returns a `TransitionResult` with two subtypes: `TransitionAccepted` and `TransitionRejected`. The rejected result contains a `StateFenceViolation` with fence name, previous state, attempted state, timestamp, operation identifier, safe metadata, stack trace and human-readable reason.
 

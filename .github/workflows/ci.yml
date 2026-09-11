@@ -55,6 +55,9 @@ jobs:
       - name: Analyse example
         working-directory: packages/state_fence_flutter/example
         run: flutter analyze --fatal-infos
+      - name: Test example
+        working-directory: packages/state_fence_flutter/example
+        run: flutter test
 
   state_fence_test:
     name: state_fence_test
@@ -75,3 +78,54 @@ jobs:
       - name: Run tests
         working-directory: packages/state_fence_test
         run: dart test
+      - name: Run example
+        working-directory: packages/state_fence_test
+        run: dart run example/state_fence_test_example.dart
+
+  publish_readiness:
+    name: publish readiness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      # A published archive must resolve on its own. Any local path override
+      # left in a pubspec.yaml would break dependency resolution once the
+      # archive is extracted for pub.dev analysis, so fail the build early.
+      - name: Reject path overrides in published pubspecs
+        run: |
+          for package in state_fence state_fence_flutter state_fence_test; do
+            if grep -q 'dependency_overrides' "packages/$package/pubspec.yaml"; then
+              echo "::error::packages/$package/pubspec.yaml declares dependency_overrides."
+              echo "Move local path overrides into pubspec_overrides.yaml instead."
+              exit 1
+            fi
+          done
+      - name: Verify overrides are excluded from archives
+        run: |
+          for package in state_fence_flutter state_fence_test; do
+            test -f "packages/$package/.pubignore" || {
+              echo "::error::packages/$package/.pubignore is missing."
+              exit 1
+            }
+            grep -q 'pubspec_overrides.yaml' "packages/$package/.pubignore" || {
+              echo "::error::packages/$package/.pubignore must exclude pubspec_overrides.yaml."
+              exit 1
+            }
+          done
+      - name: Validate state_fence archive
+        working-directory: packages/state_fence
+        run: |
+          dart pub get
+          dart pub publish --dry-run
+      - name: Confirm archives omit pubspec_overrides.yaml
+        run: |
+          for package in state_fence_flutter state_fence_test; do
+            (cd "packages/$package" && flutter pub get >/dev/null)
+            if (cd "packages/$package" && flutter pub publish --dry-run 2>&1) \
+                | grep -q 'pubspec_overrides.yaml'; then
+              echo "::error::packages/$package would publish pubspec_overrides.yaml."
+              exit 1
+            fi
+          done

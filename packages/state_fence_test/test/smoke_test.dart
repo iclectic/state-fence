@@ -55,6 +55,37 @@ void main() {
       expect(outcome, isNot(isOperationSuccess(value: 7)));
     });
 
+    test('isOperationSuccess accepts a nested matcher for the value', () async {
+      final op = GuardedOperation<int>(
+        name: 'op',
+        policy: OperationPolicy.latestWins,
+      );
+
+      final outcome = await op.run(() async => 42);
+
+      expect(outcome, isOperationSuccess(value: greaterThan(10)));
+      expect(outcome, isNot(isOperationSuccess(value: lessThan(10))));
+    });
+
+    test('isOperationSuccess(value: null) requires a null value', () async {
+      final nullable = GuardedOperation<int?>(
+        name: 'nullable',
+        policy: OperationPolicy.latestWins,
+      );
+      final nonNull = GuardedOperation<int?>(
+        name: 'non-null',
+        policy: OperationPolicy.latestWins,
+      );
+
+      expect(await nullable.run(() async => null), isOperationSuccess());
+      expect(await nullable.run(() async => null),
+          isOperationSuccess(value: null));
+      expect(
+        await nonNull.run(() async => 1),
+        isNot(isOperationSuccess(value: null)),
+      );
+    });
+
     test('isOperationFailure matches failures', () async {
       final op = GuardedOperation<int>(
         name: 'op',
@@ -96,6 +127,53 @@ void main() {
 
       reporter.clear();
       expect(reporter.violations, hasNoViolations);
+    });
+  });
+
+  group('hasNoViolations', () {
+    test('matches a CollectingReporter directly', () {
+      final reporter = CollectingReporter();
+      final fence = _createFence(reporter: reporter);
+
+      expect(reporter, hasNoViolations);
+
+      fence.transition(const _Data());
+
+      expect(reporter, isNot(hasNoViolations));
+    });
+
+    test('matches an empty list literal and a filtered list', () {
+      final reporter = CollectingReporter();
+      _createFence(reporter: reporter).transition(const _Data());
+
+      expect(<Object?>[], hasNoViolations);
+      expect(reporter.violationsOfType<StuckStateViolation>(), hasNoViolations);
+      expect(
+        reporter.violationsOfType<TransitionViolation>(),
+        isNot(hasNoViolations),
+      );
+    });
+
+    test('rejects an unrelated value', () {
+      expect('not a reporter', isNot(hasNoViolations));
+      expect(<Object?>['nonsense'], isNot(hasNoViolations));
+    });
+
+    test('describes the violations it found on mismatch', () {
+      final reporter = CollectingReporter();
+      _createFence(reporter: reporter).transition(const _Data());
+
+      expect(
+        () => expect(reporter, hasNoViolations),
+        throwsA(
+          isA<TestFailure>().having(
+            (failure) => failure.message,
+            'message',
+            allOf(contains('reported 1 violation(s)'),
+                contains('TransitionViolation')),
+          ),
+        ),
+      );
     });
   });
 

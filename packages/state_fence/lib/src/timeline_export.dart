@@ -13,6 +13,11 @@ import 'violation.dart';
 /// `timestamp` (ISO 8601), optional `operation` and a redacted `metadata`
 /// map. Event-specific fields are included as documented on each [FenceEvent]
 /// subtype.
+///
+/// Metadata values that JSON cannot represent directly, such as [DateTime] or
+/// an application object, are encoded with [Object.toString] rather than
+/// causing an error. Exporting diagnostics never throws because of the shape
+/// of caller-supplied metadata.
 String exportTimelineJson(
   Timeline timeline, {
   MetadataRedactor redactor = const MetadataRedactor(),
@@ -21,8 +26,14 @@ String exportTimelineJson(
     'droppedCount': timeline.droppedCount,
     'events': timeline.events.map((e) => _encodeEvent(e, redactor)).toList(),
   };
-  return JsonEncoder.withIndent('  ').convert(envelope);
+  return JsonEncoder.withIndent('  ', _encodeUnsupported).convert(envelope);
 }
+
+/// Falls back to a string form for values [JsonEncoder] cannot represent.
+///
+/// Metadata is supplied by the caller and may contain any object. A
+/// diagnostic export must not fail because of it.
+Object? _encodeUnsupported(Object? value) => value?.toString();
 
 Map<String, Object?> _encodeEvent(FenceEvent event, MetadataRedactor redactor) {
   final map = <String, Object?>{
