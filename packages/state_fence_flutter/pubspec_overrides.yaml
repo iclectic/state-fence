@@ -1,0 +1,9 @@
+# Local monorepo development only.
+#
+# This file resolves the sibling core package from its path so the repository
+# can be analysed and tested before `state_fence` is published. It is excluded
+# from published archives by `.pubignore`, so the hosted constraint in
+# `pubspec.yaml` is what consumers and pub.dev resolve against.
+dependency_overrides:
+  state_fence:
+    path: ../state_fence

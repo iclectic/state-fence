@@ -20,11 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StateFence.wouldAllow` and `StateFence.canTransitionTo` for querying rules without transitioning.
 - `Disposable` interface implemented by `StateFence` and `GuardedOperation` for uniform lifecycle ownership.
 - `OperationToken` and `OperationTokenGenerator` for injectable invocation identity.
-- `FenceClock`, `RealFenceClock` and `FenceSchedulerClock` for deterministic time.
-- `FenceScheduler`, `RealFenceScheduler` and `FakeFenceScheduler` for deterministic timeouts.
+- `FenceClock`, `RealFenceClock` and `FenceSchedulerClock` for deterministic time. Both `StateFence` and `GuardedOperation` accept a `clock`, defaulting to the supplied `scheduler` when one is given.
+- `FenceScheduler`, `RealFenceScheduler` and `FakeFenceScheduler` for deterministic timeouts. `FakeFenceScheduler.elapse` fires timers in chronological order even when a callback schedules or cancels further timers, and never moves its clock backwards.
 - `FenceEvent` sealed hierarchy with ten event types for transition, operation and stuck-state diagnostics.
 - `Timeline` bounded ring buffer with configurable capacity, dropped count and filtering by source or event type.
-- `MetadataRedactor` with default sensitive key redaction, custom callback support and recursive redaction. A sensitive key redacts its entire subtree, including nested maps and lists.
-- `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`.
+- `MetadataRedactor` with default sensitive key redaction, custom callback support and recursive redaction. A sensitive key redacts its entire subtree, including nested maps and lists. Redaction is total: maps with non-`String` keys are stringified, non-`List` iterables are converted to lists, and recursion is bounded by `maxDepth` so cyclic or pathologically nested metadata is truncated rather than crashing or hanging.
+- `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`. Metadata values that JSON cannot represent natively, such as `DateTime`, are encoded with `toString` so a diagnostic export never throws.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with `UseAfterDisposeViolation` reporting.
 - Unit tests covering transitions, race conditions, timeouts, retry-after-timeout, disposal, stuck states, ring-buffer overflow, subtree redaction and throwing reporters.

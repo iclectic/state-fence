@@ -39,6 +39,21 @@ cd packages/state_fence_flutter && flutter test
 cd packages/state_fence_test && dart test
 ```
 
+## Publishing
+
+The three packages depend on each other, so publication order matters.
+
+1. `state_fence` first. Nothing depends on it being published.
+2. `state_fence_flutter` and `state_fence_test` once `state_fence` is live on pub.dev, because each declares a hosted `state_fence` constraint.
+
+Local development resolves the sibling core package through `pubspec_overrides.yaml`, never through `dependency_overrides` in `pubspec.yaml`. A relative path override inside a published `pubspec.yaml` cannot be resolved once the archive is extracted on its own, which breaks `dart pub get` for pub.dev analysis and drops the package score. Each `.pubignore` keeps `pubspec_overrides.yaml` out of the archive, and the `publish_readiness` CI job enforces both rules.
+
+Once `state_fence` is published, verify the real archive resolves without the override:
+
+```sh
+cd packages/state_fence_test && dart pub get --no-example
+```
+
 ## Architecture Constraints
 
 - `packages/state_fence` must be pure Dart and must not import Flutter.

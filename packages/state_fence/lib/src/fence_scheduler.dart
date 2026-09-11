@@ -71,16 +71,25 @@ class FakeFenceScheduler implements FenceScheduler {
   }
 
   /// Advances the clock by [duration] and fires any timers that have elapsed.
+  ///
+  /// Timers fire in chronological order. A callback may schedule further
+  /// timers or cancel pending ones, and any new timer that falls within the
+  /// same window fires in its correct position rather than last.
   void elapse(Duration duration) {
     final target = _now.add(duration);
-    _timers.sort((a, b) => a.fireAt.compareTo(b.fireAt));
-    while (_timers.isNotEmpty && _timers.first.fireAt.compareTo(target) <= 0) {
+    // Re-sort on every iteration because a callback may have scheduled a new
+    // timer that should fire before timers already in the queue.
+    while (true) {
+      _timers.removeWhere((timer) => timer.isCancelled);
+      _timers.sort((a, b) => a.fireAt.compareTo(b.fireAt));
+      if (_timers.isEmpty || _timers.first.fireAt.isAfter(target)) break;
       final next = _timers.removeAt(0);
-      if (next.isCancelled) continue;
-      _now = next.fireAt;
+      // A timer scheduled in the past by a re-entrant callback must not move
+      // the clock backwards.
+      if (next.fireAt.isAfter(_now)) _now = next.fireAt;
       next.callback();
     }
-    _now = target;
+    if (target.isAfter(_now)) _now = target;
   }
 
   /// Whether any timers are currently pending and not cancelled.

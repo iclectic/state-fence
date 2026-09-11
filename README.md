@@ -93,6 +93,8 @@ if (result case TransitionAccepted()) {
 }
 ```
 
+Every fence and operation returns its result to the caller. Reporting is separate and opt in: the default reporter is silent, so pass a `reporter` such as `FlutterErrorReporter`, `CollectingReporter` or `ThrowingReporter` when you also want violations surfaced somewhere.
+
 ## Guarded Operations
 
 Run async work with a concurrency policy so stale or duplicate results cannot silently overwrite newer state.
@@ -198,7 +200,9 @@ final json = exportTimelineJson(timeline);
 
 ### Redaction
 
-The default `MetadataRedactor` redacts keys such as `password`, `token`, `secret`, `authorisation`, `authorization`, `cookie`, `api_key`, `apikey`, `access_token` and `refresh_token`. Matching is case-insensitive and recursive through nested maps and lists.
+The default `MetadataRedactor` redacts keys such as `password`, `token`, `secret`, `authorisation`, `authorization`, `cookie`, `api_key`, `apikey`, `access_token` and `refresh_token`. Matching is case-insensitive and recursive through nested maps and iterables.
+
+Redaction and export are total. Maps with non-`String` keys are stringified, recursion is bounded by `maxDepth` so cyclic metadata is truncated rather than looping, and values that JSON cannot represent natively are encoded with `toString`. Exporting diagnostics never throws because of the shape of the metadata you attached.
 
 ```dart
 const redactor = MetadataRedactor(
@@ -257,6 +261,8 @@ final fence = StateFence<MyState>(
 StateFence is designed for deterministic testing. The `state_fence_test` package provides readable matchers, a `CollectingReporter` and re-exports the deterministic `FakeFenceScheduler`.
 
 ```dart
+import 'dart:async';
+
 import 'package:state_fence/state_fence.dart';
 import 'package:state_fence_test/state_fence_test.dart';
 import 'package:test/test.dart';

@@ -1,0 +1,11 @@
+# Local monorepo development only.
+#
+# This file resolves both StateFence packages from their paths so the example
+# can be analysed and run before either package is published. It is excluded
+# from published archives by `.pubignore`, so a reader who downloads the
+# example from pub.dev builds it against the hosted packages instead.
+dependency_overrides:
+  state_fence:
+    path: ../../state_fence
+  state_fence_flutter:
+    path: ../

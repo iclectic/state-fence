@@ -33,25 +33,45 @@ class MetadataRedactor {
   /// The placeholder value substituted for redacted entries.
   final String redactedPlaceholder;
 
+  /// The maximum nesting depth traversed before recursion stops.
+  ///
+  /// Structures deeper than this, including self-referencing ones, are
+  /// truncated instead of recursed into. This keeps redaction bounded.
+  final int maxDepth;
+
+  /// The placeholder value substituted where [maxDepth] is exceeded.
+  final String truncatedPlaceholder;
+
   /// Creates a redactor.
   ///
   /// [sensitiveKeys] defaults to [defaultSensitiveKeys]. [redactedPlaceholder]
-  /// is the string written in place of redacted values.
+  /// is the string written in place of redacted values. [maxDepth] bounds
+  /// recursion and must be greater than zero.
   const MetadataRedactor({
     this.sensitiveKeys = defaultSensitiveKeys,
     this.redactor,
     this.redactedPlaceholder = '<redacted>',
-  });
+    this.maxDepth = 16,
+    this.truncatedPlaceholder = '<truncated>',
+  }) : assert(maxDepth > 0, 'maxDepth must be greater than zero');
 
-  /// Returns a redacted copy of [value], recursing into maps and lists.
+  /// Returns a redacted copy of [value], recursing into maps and iterables.
+  ///
+  /// Iterables other than [List], such as [Set], are returned as lists so the
+  /// result is always JSON-encodable.
   ///
   /// Map keys are matched case-insensitively against [sensitiveKeys]. A
   /// sensitive key redacts its entire value, including nested maps and
-  /// lists, so structured secrets cannot leak through recursion. Top-level
-  /// scalars are returned unchanged.
-  Object? redact(Object? value) => _redactValue(null, value);
+  /// iterables, so structured secrets cannot leak through recursion.
+  /// Top-level scalars are returned unchanged.
+  ///
+  /// Maps with non-`String` keys are supported: each key is converted with
+  /// [Object.toString] before matching, and a `null` key becomes the string
+  /// `'null'`. Recursion is bounded by [maxDepth]. Redaction never throws, so
+  /// a diagnostic path can always run.
+  Object? redact(Object? value) => _redactValue(null, value, 0);
 
-  Object? _redactValue(String? key, Object? value) {
+  Object? _redactValue(String? key, Object? value, int depth) {
     if (key != null) {
       final custom = redactor;
       if (custom != null) {
@@ -65,28 +85,27 @@ class MetadataRedactor {
         return redactedPlaceholder;
       }
     }
-    if (value is Map<String, Object?>) {
-      return _redactMap(value);
-    }
-    if (value is Map) {
-      return _redactMap(Map<String, Object?>.from(value));
-    }
-    if (value is List) {
-      return _redactList(value);
+    if (value is Map || value is Iterable) {
+      if (depth >= maxDepth) return truncatedPlaceholder;
+      if (value is Map) return _redactMap(value, depth + 1);
+      return _redactIterable(value as Iterable<Object?>, depth + 1);
     }
     return value;
   }
 
-  Map<String, Object?> _redactMap(Map<String, Object?> map) {
+  /// Redacts [map] entry by entry, stringifying keys that are not [String]s so
+  /// that maps such as `Map<int, Object?>` cannot throw during redaction.
+  Map<String, Object?> _redactMap(Map<Object?, Object?> map, int depth) {
     final result = <String, Object?>{};
     map.forEach((key, value) {
-      result[key] = _redactValue(key, value);
+      final name = key is String ? key : '$key';
+      result[name] = _redactValue(name, value, depth);
     });
     return result;
   }
 
-  List<Object?> _redactList(List<Object?> list) {
-    return list.map((item) => _redactValue(null, item)).toList();
+  List<Object?> _redactIterable(Iterable<Object?> items, int depth) {
+    return items.map((item) => _redactValue(null, item, depth)).toList();
   }
 
   bool _isSensitive(String key) {

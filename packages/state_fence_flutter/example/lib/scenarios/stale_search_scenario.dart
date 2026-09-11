@@ -61,13 +61,19 @@ class _StaleSearchScenarioState extends State<StaleSearchScenario>
     if (!mounted) return;
 
     setState(() {
-      if (outcome case OperationSuccess(:final value)) {
-        query.tone = StatusTone.success;
-        query.status = 'Accepted';
-        _results = value;
-      } else if (outcome case OperationIgnoredAsStale()) {
-        query.tone = StatusTone.warning;
-        query.status = 'Discarded as stale';
+      switch (outcome) {
+        case OperationSuccess(:final value):
+          query.tone = StatusTone.success;
+          query.status = 'Accepted';
+          _results = value;
+        case OperationIgnoredAsStale():
+          query.tone = StatusTone.warning;
+          query.status = 'Discarded as stale';
+        default:
+          // Every outcome must leave the progress tone, otherwise the button
+          // below stays disabled for good.
+          query.tone = StatusTone.error;
+          query.status = 'Not applied';
       }
       _running = _queries.any((q) => q.tone == StatusTone.progress);
     });

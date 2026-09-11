@@ -1,6 +1,8 @@
 import 'package:matcher/matcher.dart';
 import 'package:state_fence/state_fence.dart';
 
+import 'collecting_reporter.dart';
+
 /// Matches a [StateFence] that currently allows a transition from [F] to [T].
 ///
 /// ```dart
@@ -16,16 +18,30 @@ Matcher allowsTransition<F, T>() => _TransitionRuleMatcher<F, T>(true);
 /// ```
 Matcher rejectsTransition<F, T>() => _TransitionRuleMatcher<F, T>(false);
 
+/// Sentinel meaning "no value expectation was supplied".
+///
+/// This distinguishes `isOperationSuccess()` from `isOperationSuccess(value:
+/// null)`, which asserts that the success value really is `null`.
+const Object _unspecified = Object();
+
 /// Matches an [OperationOutcome] that is an [OperationSuccess].
 ///
-/// Optionally matches the success [value].
-Matcher isOperationSuccess({Object? value}) =>
+/// When [value] is supplied, the success value must also match it. A [Matcher]
+/// is applied as a matcher; any other object is compared with `==`, so
+/// `isOperationSuccess(value: null)` matches only a success carrying `null`.
+///
+/// ```dart
+/// expect(outcome, isOperationSuccess(value: 42));
+/// expect(outcome, isOperationSuccess(value: greaterThan(10)));
+/// ```
+Matcher isOperationSuccess({Object? value = _unspecified}) =>
     _OutcomeMatcher<OperationSuccess<Object?>>(
       'OperationSuccess',
-      value == null
+      identical(value, _unspecified)
           ? null
-          : (outcome) => (outcome as OperationSuccess).value == value,
-      value == null ? null : 'with value $value',
+          : (outcome) => wrapMatcher(value)
+              .matches((outcome as OperationSuccess).value, {}),
+      identical(value, _unspecified) ? null : 'with value $value',
     );
 
 /// Matches an [OperationOutcome] that is an [OperationFailure].
@@ -46,8 +62,13 @@ const Matcher isIgnoredAsDuplicate =
 const Matcher isOperationTimedOut = _OutcomeMatcher<OperationTimedOut<Object?>>(
     'OperationTimedOut', null, null);
 
-/// Matches a [CollectingReporter] or a list of violations containing no
+/// Matches a [CollectingReporter] or an [Iterable] of violations that holds no
 /// violations at all.
+///
+/// ```dart
+/// expect(reporter, hasNoViolations);
+/// expect(reporter.violations, hasNoViolations);
+/// ```
 const Matcher hasNoViolations = _NoViolationsMatcher();
 
 class _TransitionRuleMatcher<F, T> extends Matcher {
@@ -80,7 +101,11 @@ class _OutcomeMatcher<O> extends Matcher {
   bool matches(Object? item, Map<Object?, Object?> matchState) {
     if (item is! O) return false;
     final check = extraCheck;
-    return check == null || check(item as Object);
+    if (check != null && !check(item as Object)) {
+      matchState['wrongValue'] = true;
+      return false;
+    }
+    return true;
   }
 
   @override
@@ -91,6 +116,22 @@ class _OutcomeMatcher<O> extends Matcher {
     }
     return description;
   }
+
+  @override
+  Description describeMismatch(
+    Object? item,
+    Description mismatchDescription,
+    Map<Object?, Object?> matchState,
+    bool verbose,
+  ) {
+    if (matchState['wrongValue'] == true) {
+      return mismatchDescription.add('is $item with a different value');
+    }
+    if (item is OperationOutcome) {
+      return mismatchDescription.add('is ${item.runtimeType}: $item');
+    }
+    return mismatchDescription.add('is not an OperationOutcome');
+  }
 }
 
 class _NoViolationsMatcher extends Matcher {
@@ -98,11 +139,44 @@ class _NoViolationsMatcher extends Matcher {
 
   @override
   bool matches(Object? item, Map<Object?, Object?> matchState) {
-    if (item is List<StateFenceViolation>) return item.isEmpty;
-    return false;
+    final violations = _violationsOf(item);
+    if (violations == null) return false;
+    matchState['violations'] = violations;
+    return violations.isEmpty;
   }
 
   @override
   Description describe(Description description) =>
-      description.add('an empty list of StateFence violations');
+      description.add('a source reporting no StateFence violations');
+
+  @override
+  Description describeMismatch(
+    Object? item,
+    Description mismatchDescription,
+    Map<Object?, Object?> matchState,
+    bool verbose,
+  ) {
+    final violations = matchState['violations'];
+    if (violations is! List<StateFenceViolation>) {
+      return mismatchDescription
+          .add('is not a CollectingReporter or an iterable of violations');
+    }
+    mismatchDescription.add('reported ${violations.length} violation(s):');
+    for (final violation in violations) {
+      mismatchDescription
+          .add('\n  ${violation.runtimeType}: ${violation.reason}');
+    }
+    return mismatchDescription;
+  }
+
+  List<StateFenceViolation>? _violationsOf(Object? item) {
+    if (item is CollectingReporter) return item.violations;
+    if (item is Iterable<StateFenceViolation>) return item.toList();
+    // An empty literal such as `[]` is a List<dynamic>, so fall back to an
+    // element check rather than rejecting it outright.
+    if (item is Iterable && item.every((e) => e is StateFenceViolation)) {
+      return item.cast<StateFenceViolation>().toList();
+    }
+    return null;
+  }
 }

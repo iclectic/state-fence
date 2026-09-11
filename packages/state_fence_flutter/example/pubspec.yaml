@@ -6,7 +6,10 @@ publish_to: none
 
 environment:
   sdk: ^3.0.0
-  flutter: '>=3.16.0'
+  # The demo UI uses Color.withValues and the surfaceContainer colour roles,
+  # which require a newer Flutter than the library itself does. The published
+  # packages keep the lower bound declared in their own pubspecs.
+  flutter: '>=3.27.0'
 
 dependencies:
   flutter:
@@ -21,11 +24,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
-# This example is never published (publish_to: none). The overrides make it
-# build against the local packages during monorepo development.
-dependency_overrides:
-  state_fence:
-    path: ../../state_fence
-  state_fence_flutter:
-    path: ../
