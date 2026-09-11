@@ -1,8 +1,7 @@
 name: state_fence_test
 description: >-
-  Test utilities and matchers for the StateFence correctness toolkit.
-  Provides fake clock support and scenario helpers for deterministic testing
-  of state transitions and guarded operations.
+  Test utilities and matchers for StateFence: readable transition and outcome
+  matchers, a collecting reporter and deterministic fake time.
 version: 0.1.0
 
 repository: https://github.com/iclectic/state-fence
