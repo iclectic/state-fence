@@ -79,3 +79,31 @@ cd packages/state_fence_test && dart pub get --no-example
 - All relevant tests pass.
 - The pure Dart package has no Flutter dependency.
 - The final diff has been reviewed for accidental public API, dependency and documentation problems.
+
+## Cursor Cloud specific instructions
+
+Flutter stable is installed at `/opt/flutter`. `flutter` and `dart` are on the default `PATH`. Chrome and the Linux desktop toolchain are available. The Android SDK is not installed, so exercise the example in Chrome or with `flutter test`.
+
+After checkout, refresh dependencies, then use the format, analyse and test commands above:
+
+```sh
+dart pub get --directory packages/state_fence
+dart pub get --directory packages/state_fence_test
+flutter pub get --directory packages/state_fence_flutter
+flutter pub get --directory packages/state_fence_flutter/example
+```
+
+Console examples:
+
+```sh
+cd packages/state_fence && dart run example/state_fence_example.dart
+cd packages/state_fence_test && dart run example/state_fence_test_example.dart
+```
+
+Interactive example:
+
+```sh
+cd packages/state_fence_flutter/example && flutter run -d web-server --web-hostname 127.0.0.1 --web-port 8080
+```
+
+`packages/state_fence_flutter/analysis_options.yaml` excludes `build/**`. Current Flutter `pub get` rewrites that file when the exclude is missing.
