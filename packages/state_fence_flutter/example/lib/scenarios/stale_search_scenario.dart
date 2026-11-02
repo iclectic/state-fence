@@ -56,8 +56,9 @@ class _StaleSearchScenarioState extends State<StaleSearchScenario>
   }
 
   Future<void> _runQuery(_Query query) async {
-    final OperationOutcome<List<String>> outcome =
-        await _guardedSearch.run(() => _fakeSearch(query));
+    final OperationOutcome<List<String>> outcome = await _guardedSearch.run(
+      () => _fakeSearch(query),
+    );
     if (!mounted) return;
 
     setState(() {

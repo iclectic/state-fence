@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'change_notifier_checkout.dart';
+import 'scenarios/checkout_contract_scenario.dart';
 import 'scenarios/duplicate_submission_scenario.dart';
 import 'scenarios/stale_search_scenario.dart';
 import 'scenarios/stuck_loading_scenario.dart';
@@ -21,9 +23,30 @@ class StateFenceExampleApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
-      home: const HomeScreen(),
+      home: _screenFor(_requestedScreen()),
     );
   }
+}
+
+/// Screen named by `?screen=` on the web, or by `--dart-define=SCREEN=`.
+///
+/// An empty value opens the home list. Screenshot captures use the query
+/// parameter so one web build can show each demo.
+String _requestedScreen() {
+  final String fromUrl = Uri.base.queryParameters['screen'] ?? '';
+  if (fromUrl.isNotEmpty) return fromUrl;
+  return const String.fromEnvironment('SCREEN');
+}
+
+Widget _screenFor(String name) {
+  return switch (name) {
+    'checkout' => const CheckoutContractScenario(),
+    'notifier' => const ChangeNotifierCheckoutScreen(),
+    'stale' => const StaleSearchScenario(),
+    'duplicate' => const DuplicateSubmissionScenario(),
+    'stuck' => const StuckLoadingScenario(),
+    _ => const HomeScreen(),
+  };
 }
 
 /// Describes a single interactive demo shown on the home screen.
@@ -51,6 +74,20 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scenarios = <_Scenario>[
+      _Scenario(
+        title: 'Checkout contract',
+        summary: 'A fence, a guarded payment and a redacted timeline.',
+        icon: Icons.rule,
+        accent: const Color(0xFF7C3AED),
+        builder: (_) => const CheckoutContractScenario(),
+      ),
+      _Scenario(
+        title: 'ChangeNotifier checkout',
+        summary: 'Listeners update only after the fence accepts.',
+        icon: Icons.notifications_active_outlined,
+        accent: const Color(0xFF2563EB),
+        builder: (_) => const ChangeNotifierCheckoutScreen(),
+      ),
       _Scenario(
         title: 'Stale search response',
         summary: 'A slow older request overwrites newer results.',
@@ -182,9 +219,8 @@ class _ScenarioCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () => Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(builder: scenario.builder),
-        ),
+        onTap: () => Navigator.of(context)
+            .push<void>(MaterialPageRoute<void>(builder: scenario.builder)),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Row(

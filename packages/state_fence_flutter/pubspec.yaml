@@ -1,10 +1,10 @@
 name: state_fence_flutter
 description: >-
-  Flutter integration for state_fence: lifecycle ownership for fences and
-  guarded operations, plus a reporter that forwards violations to FlutterError.
+  Flutter integration for state_fence: lifecycle ownership, a build-mode
+  reporter and an opt-in on-device inspector.
 version: 0.1.0
 
-repository: https://github.com/iclectic/state-fence
+repository: https://github.com/iclectic/state-fence/tree/main/packages/state_fence_flutter
 issue_tracker: https://github.com/iclectic/state-fence/issues
 
 topics:
@@ -13,6 +13,20 @@ topics:
   - diagnostics
   - flutter
   - lifecycle
+
+screenshots:
+  - description: Home screen of the example, with the checkout contract, ChangeNotifier sample and race-condition demos.
+    path: screenshots/home.png
+  - description: Checkout screen with a transition fence, a guarded payment and the on-device inspector.
+    path: screenshots/checkout.png
+  - description: ChangeNotifier sample that notifies listeners only after the fence accepts the transition.
+    path: screenshots/change_notifier.png
+  - description: Stale search demo. latestWins keeps the newest result and discards the slower response.
+    path: screenshots/stale_search.png
+  - description: Duplicate submission demo. firstWins ignores a second pay tap while the first is in flight.
+    path: screenshots/duplicate_submission.png
+  - description: Stuck loading demo. A guarded timeout reports when a refresh never completes.
+    path: screenshots/stuck_loading.png
 
 environment:
   sdk: ^3.0.0

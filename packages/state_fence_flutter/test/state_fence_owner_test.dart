@@ -23,10 +23,7 @@ void main() {
     test('registers and disposes a GuardedOperation', () {
       final owner = StateFenceOwner();
       final op = owner.register(
-        GuardedOperation<int>(
-          name: 'op',
-          policy: OperationPolicy.latestWins,
-        ),
+        GuardedOperation<int>(name: 'op', policy: OperationPolicy.latestWins),
       );
 
       expect(op.isDisposed, isFalse);
@@ -37,11 +34,7 @@ void main() {
     test('dispose is idempotent', () {
       final owner = StateFenceOwner();
       owner.register(
-        StateFence<String>(
-          name: 'test',
-          initialState: 'idle',
-          rules: [],
-        ),
+        StateFence<String>(name: 'test', initialState: 'idle', rules: []),
       );
 
       owner.dispose();
@@ -55,11 +48,7 @@ void main() {
 
       expect(
         () => owner.register(
-          StateFence<String>(
-            name: 'late',
-            initialState: 'idle',
-            rules: [],
-          ),
+          StateFence<String>(name: 'late', initialState: 'idle', rules: []),
         ),
         throwsStateError,
       );
@@ -77,14 +66,13 @@ void main() {
   });
 
   group('StateFenceStateMixin', () {
-    testWidgets('disposes registered fences on widget disposal',
-        (tester) async {
+    testWidgets('disposes registered fences on widget disposal', (
+      tester,
+    ) async {
       late StateFence<String>? capturedFence;
 
       await tester.pumpWidget(
-        _TestWidget(
-          onInit: (fence) => capturedFence = fence,
-        ),
+        _TestWidget(onInit: (fence) => capturedFence = fence),
       );
 
       expect(capturedFence, isNotNull);
@@ -172,8 +160,6 @@ class _TestWidgetState extends State<_TestWidget> with StateFenceStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(body: Text(fence.name)),
-    );
+    return MaterialApp(home: Scaffold(body: Text(fence.name)));
   }
 }

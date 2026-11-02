@@ -1,7 +1,7 @@
 name: state_fence_example
 description: >-
-  Example application demonstrating StateFence against three common Flutter
-  state failures: stale search, duplicate submission and stuck loading.
+  Example application demonstrating checkout, a ChangeNotifier sample, and
+  stale, duplicate and stuck-state demos.
 publish_to: none
 
 environment:

@@ -4,7 +4,7 @@ description: >-
   transition contracts, guarded async operations and privacy-aware diagnostics.
 version: 0.1.0
 
-repository: https://github.com/iclectic/state-fence
+repository: https://github.com/iclectic/state-fence/tree/main/packages/state_fence
 issue_tracker: https://github.com/iclectic/state-fence/issues
 
 topics:

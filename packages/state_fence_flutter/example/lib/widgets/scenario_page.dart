@@ -72,11 +72,7 @@ class ScenarioPage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 20),
-              InfoCard(
-                problem: problem,
-                solution: solution,
-                accent: accent,
-              ),
+              InfoCard(problem: problem, solution: solution, accent: accent),
               const SizedBox(height: 20),
               ...children,
             ],

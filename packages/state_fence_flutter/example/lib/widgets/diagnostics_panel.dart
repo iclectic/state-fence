@@ -67,8 +67,9 @@ class DiagnosticsPanel extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     'No violations recorded.',
-                    style: text.bodyMedium
-                        ?.copyWith(color: scheme.onSurfaceVariant),
+                    style: text.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
                   ),
                 ],
               )
@@ -79,18 +80,9 @@ class DiagnosticsPanel extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: 18,
-                        color: scheme.error,
-                      ),
+                      Icon(Icons.error_outline, size: 18, color: scheme.error),
                       const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          v.reason,
-                          style: text.bodyMedium,
-                        ),
-                      ),
+                      Expanded(child: Text(v.reason, style: text.bodyMedium)),
                     ],
                   ),
                 ),
@@ -118,10 +110,10 @@ class _Count extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           '$value',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: tone,
-                fontWeight: FontWeight.w700,
-              ),
+          style: Theme.of(context)
+              .textTheme
+              .labelLarge
+              ?.copyWith(color: tone, fontWeight: FontWeight.w700),
         ),
       ],
     );

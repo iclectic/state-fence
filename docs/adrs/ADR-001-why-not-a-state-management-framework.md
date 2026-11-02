@@ -17,5 +17,5 @@ StateFence will be a state-management-neutral correctness toolkit. It validates 
 - Users can adopt StateFence incrementally in an existing project without a migration.
 - The package has a smaller, more focused public API.
 - The core package can remain pure Dart.
-- Adapter packages can be added later as thin wrappers.
+- Adapter packages live beside the core and depend on it. The core does not depend on them, and it does not import a state-management framework. `state_fence_bloc`, `state_fence_riverpod` and `state_fence_provider` are those packages.
 - StateFence must expose deterministic, framework-agnostic primitives that users wire into their chosen state-management solution.

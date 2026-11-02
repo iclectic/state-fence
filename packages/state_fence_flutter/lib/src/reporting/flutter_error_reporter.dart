@@ -34,10 +34,7 @@ class FlutterErrorReporter implements StateFenceReporter {
     return switch (violation) {
       TransitionViolation() => [
           DiagnosticsProperty<Type>('previousState', violation.previousState),
-          DiagnosticsProperty<Type>(
-            'attemptedState',
-            violation.attemptedState,
-          ),
+          DiagnosticsProperty<Type>('attemptedState', violation.attemptedState),
         ],
       OperationTimeoutViolation() => [
           DiagnosticsProperty<Duration>('timeout', violation.timeout),

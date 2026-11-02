@@ -104,8 +104,9 @@ class StateFence<S> implements Disposable {
     String? operation,
     Map<String, Object?>? metadata,
   }) {
-    final safeMetadata =
-        Map<String, Object?>.unmodifiable(metadata ?? const {});
+    final safeMetadata = Map<String, Object?>.unmodifiable(
+      metadata ?? const {},
+    );
 
     if (_disposed) {
       final violation = UseAfterDisposeViolation(
@@ -226,11 +227,6 @@ class StateFence<S> implements Disposable {
     _disposed = true;
     _stuckTimer?.cancel();
     _stuckTimer = null;
-    _timeline?.add(
-      OwnerDisposedEvent(
-        source: name,
-        timestamp: _clock.now(),
-      ),
-    );
+    _timeline?.add(OwnerDisposedEvent(source: name, timestamp: _clock.now()));
   }
 }

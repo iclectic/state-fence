@@ -1,16 +1,25 @@
 # StateFence example
 
-An interactive Flutter application that demonstrates StateFence against three
-common state failures:
+An interactive Flutter application that demonstrates StateFence.
 
+- Checkout contract: a `StateFence` and a `GuardedOperation` in one flow.
+  Success, failure and timeout are applied through `transition`. Stale and
+  duplicate outcomes leave the displayed state unchanged. The inspector shows
+  the rejection, the stuck-state violation and the redacted timeline.
+- ChangeNotifier checkout: application code in `lib/change_notifier_checkout.dart`.
+  Listeners are notified only after the fence accepts a transition.
 - Stale search response, resolved with `OperationPolicy.latestWins`.
 - Duplicate submission, resolved with `OperationPolicy.firstWins`.
 - Stuck loading state, resolved with a `GuardedOperation` timeout.
 
-Each screen frames the failure mode, lets you trigger it and shows the guarded
-outcome alongside a live diagnostics panel of violations and timeline events.
+The checkout screen registers its fence and operations with
+`StateFenceStateMixin`. The scripted rejection, stuck state and timeout stay
+on the inspector.
 
 ## Running
+
+The demo UI needs Flutter >=3.27.0. The `state_fence_flutter` library itself
+allows >=3.16.0.
 
 ```sh
 flutter pub get
@@ -22,3 +31,6 @@ To run in a browser:
 ```sh
 flutter run -d chrome
 ```
+
+In this repository, `pubspec_overrides.yaml` resolves the sibling packages.
+That file is omitted from the published archive.

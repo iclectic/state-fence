@@ -6,6 +6,7 @@
 library;
 
 export 'src/disposable.dart';
+export 'src/error_describer.dart';
 export 'src/fence_clock.dart';
 export 'src/fence_event.dart';
 export 'src/fence_scheduler.dart';
@@ -15,6 +16,7 @@ export 'src/operation_policy.dart';
 export 'src/operation_token.dart';
 export 'src/redactor.dart';
 export 'src/reporter.dart';
+export 'src/retry_policy.dart';
 export 'src/state_fence.dart';
 export 'src/timeline.dart';
 export 'src/timeline_export.dart';

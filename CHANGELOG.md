@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TransitionResult<S>` sealed hierarchy: `TransitionAccepted<S>` and `TransitionRejected<S>`.
 - `StateFenceViolation` sealed hierarchy: `TransitionViolation`, `OperationTimeoutViolation`, `StuckStateViolation` and `UseAfterDisposeViolation`, each with source, timestamp, operation, safe metadata, stack trace and reason.
 - `StateFenceReporter` interface and `DevNullReporter` default. Throwing reporters enable strict mode at synchronous call sites; timeline events are always recorded before the reporter is invoked.
-- `GuardedOperation<T>` with `OperationPolicy.latestWins` and `OperationPolicy.firstWins`.
+- `GuardedOperation<T>` with `OperationPolicy.latestWins`, `OperationPolicy.firstWins`, `OperationPolicy.restartable`, `OperationPolicy.sequential` and `OperationPolicy.parallel`.
+- Optional `RetryPolicy` on `GuardedOperation`. It reruns a failed action with scheduler-driven backoff and does not retry timeouts.
 - `OperationOutcome<T>` sealed hierarchy: `OperationSuccess`, `OperationFailure`, `OperationIgnoredAsStale`, `OperationIgnoredAsDuplicate` and `OperationTimedOut`.
 - Timeouts resolve the `run` future with `OperationTimedOut` as soon as they fire, so callers are never left waiting on a stuck operation. Late results are discarded. Under `firstWins`, a timed-out invocation no longer blocks a retry.
 - Stuck-state detection on `StateFence` via `stuckStateTimeouts`, reporting `StuckStateViolation` and recording `StateStuckEvent` when a transitional state exceeds its declared maximum duration.
@@ -28,8 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Timeline` bounded ring buffer with configurable capacity, dropped count and filtering by source or event type.
 - `MetadataRedactor` with default sensitive key redaction, custom callback support and recursive redaction. A sensitive key redacts its entire subtree, including nested maps and lists. Redaction is total: maps with non-`String` keys are stringified, non-`List` iterables are converted to lists, and recursion is bounded by `maxDepth` so cyclic or pathologically nested metadata is truncated rather than crashing or hanging.
 - `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`. Metadata values that JSON cannot represent natively, such as `DateTime`, are encoded with `toString` so a diagnostic export never throws.
+- `ErrorDescriber` on `GuardedOperation`. The default, `describeErrorRuntimeType`, records only the error's runtime type. `describeErrorMessage` opts in to the full message. `exportTimelineJson` writes that description and does not call `toString` on the thrown error, so a secret in an exception message cannot leak by default. The `OperationFailure` returned to the caller still carries the error object.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with `UseAfterDisposeViolation` reporting.
-- Console example demonstrating transition contracts, stale-result discarding and non-hanging timeouts.
+- Console example that applies guarded outcomes through `StateFence.transition`, prints a rejected transition, and prints a stuck-state event. Stale and duplicate outcomes leave the UI variable unchanged.
 
 #### state_fence_flutter
 
@@ -37,7 +39,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StateFenceStateMixin` for automatic disposal on `State.dispose`.
 - `FlutterErrorReporter` forwarding violations to `FlutterError.reportError` with per-violation diagnostic properties.
 - `StateFenceViolationException` wrapping violations for Flutter's error pipeline.
-- Example application with three failure scenarios: stale search, duplicate submission and stuck loading.
+- `stateFenceReporterForBuildMode` and opt-in `StateFenceInspector`.
+- Example application with a checkout screen, a ChangeNotifier sample, and the stale search, duplicate submission and stuck loading scenarios.
+- Screenshots of the Flutter example.
 
 #### state_fence_test
 
@@ -47,6 +51,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ThrowingReporter` for strict tests.
 - `hasNoViolations` matcher, which accepts a `CollectingReporter` directly or any iterable of violations and lists the offending violations on mismatch.
 - Re-exports of `FakeFenceScheduler`, `FenceSchedulerClock` and `MonotonicTokenGenerator`.
+
+#### state_fence_bloc
+
+- `StateFenceCubit<S>`, which emits only when its fence accepts the transition.
+
+#### state_fence_riverpod
+
+- `StateFenceNotifierMixin<S>` for a Riverpod 2 `Notifier`. `transition` assigns `state` only when the fence accepts it.
+
+#### state_fence_provider
+
+- `StateFenceController<S>` and `stateFenceProvider`. Listeners are notified only when the fence accepts the transition.
 
 ### Changed
 

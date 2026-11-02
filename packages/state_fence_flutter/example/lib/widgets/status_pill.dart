@@ -57,10 +57,7 @@ class StatusPill extends StatelessWidget {
           scheme.tertiaryContainer,
           scheme.onTertiaryContainer,
         ),
-      StatusTone.error => (
-          scheme.errorContainer,
-          scheme.onErrorContainer,
-        ),
+      StatusTone.error => (scheme.errorContainer, scheme.onErrorContainer),
     };
 
     return Container(
@@ -76,10 +73,10 @@ class StatusPill extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(context)
+                .textTheme
+                .labelLarge
+                ?.copyWith(color: foreground, fontWeight: FontWeight.w600),
           ),
         ],
       ),

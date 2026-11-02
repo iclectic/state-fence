@@ -14,6 +14,12 @@ import 'violation.dart';
 /// map. Event-specific fields are included as documented on each [FenceEvent]
 /// subtype.
 ///
+/// [OperationFailedEvent.errorDescription] is written as stored.
+/// [GuardedOperation] produces that text with its [ErrorDescriber], which
+/// defaults to the error's runtime type. This function does not call
+/// [Object.toString] on a thrown error, so an exception message that was not
+/// passed through a describer is not added to the export.
+///
 /// Metadata values that JSON cannot represent directly, such as [DateTime] or
 /// an application object, are encoded with [Object.toString] rather than
 /// causing an error. Exporting diagnostics never throws because of the shape

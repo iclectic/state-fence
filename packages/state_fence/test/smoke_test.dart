@@ -18,9 +18,7 @@ void main() {
     final fence = StateFence<_SearchState>(
       name: 'search',
       initialState: const _Idle(),
-      rules: [
-        allow<_Idle, _Loading>(),
-      ],
+      rules: [allow<_Idle, _Loading>()],
     );
 
     final result = fence.transition(const _Loading());

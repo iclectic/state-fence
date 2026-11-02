@@ -57,15 +57,21 @@ class _DuplicateSubmissionScenarioState
 
   _Attempt _outcomeToAttempt(String label, OperationOutcome<String> outcome) {
     return switch (outcome) {
-      OperationSuccess(:final value) =>
-        _Attempt('$label: $value', StatusTone.success, Icons.check_rounded),
+      OperationSuccess(:final value) => _Attempt(
+          '$label: $value',
+          StatusTone.success,
+          Icons.check_rounded,
+        ),
       OperationIgnoredAsDuplicate() => _Attempt(
           '$label: ignored as duplicate',
           StatusTone.warning,
           Icons.block_rounded,
         ),
-      OperationFailure() =>
-        _Attempt('$label: failed', StatusTone.error, Icons.error_outline),
+      OperationFailure() => _Attempt(
+          '$label: failed',
+          StatusTone.error,
+          Icons.error_outline,
+        ),
       _ => _Attempt('$label: $outcome', StatusTone.neutral, Icons.info_outline),
     };
   }
@@ -79,8 +85,9 @@ class _DuplicateSubmissionScenarioState
     // Fire two charges at the same instant, exactly as a double tap would.
     final Future<OperationOutcome<String>> first = _pay.run(_charge);
     final Future<OperationOutcome<String>> second = _pay.run(_charge);
-    final List<OperationOutcome<String>> outcomes =
-        await Future.wait(<Future<OperationOutcome<String>>>[first, second]);
+    final List<OperationOutcome<String>> outcomes = await Future.wait(
+      <Future<OperationOutcome<String>>>[first, second],
+    );
 
     if (!mounted) return;
     setState(() {
@@ -139,8 +146,11 @@ class _DuplicateSubmissionScenarioState
           const SizedBox(height: 4),
           Row(
             children: [
-              Icon(Icons.receipt_long_outlined,
-                  size: 18, color: scheme.primary),
+              Icon(
+                Icons.receipt_long_outlined,
+                size: 18,
+                color: scheme.primary,
+              ),
               const SizedBox(width: 8),
               Text(
                 'Total charges made: $_charges',
