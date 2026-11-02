@@ -4,16 +4,17 @@ An interactive Flutter application that demonstrates StateFence.
 
 - Checkout contract: a `StateFence` and a `GuardedOperation` in one flow.
   Success, failure and timeout are applied through `transition`. Stale and
-  duplicate outcomes leave the displayed state unchanged. The diagnostics
-  panel shows the rejection, the stuck-state violation and the redacted
-  timeline.
+  duplicate outcomes leave the displayed state unchanged. The inspector shows
+  the rejection, the stuck-state violation and the redacted timeline.
+- ChangeNotifier checkout: application code in `lib/change_notifier_checkout.dart`.
+  Listeners are notified only after the fence accepts a transition.
 - Stale search response, resolved with `OperationPolicy.latestWins`.
 - Duplicate submission, resolved with `OperationPolicy.firstWins`.
 - Stuck loading state, resolved with a `GuardedOperation` timeout.
 
 The checkout screen registers its fence and operations with
-`StateFenceStateMixin` and reports violations through `FlutterErrorReporter`
-as well as the on-screen panel.
+`StateFenceStateMixin` and reports violations through
+`stateFenceReporterForBuildMode` as well as the on-screen inspector.
 
 ## Running
 

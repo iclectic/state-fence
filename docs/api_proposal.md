@@ -132,7 +132,7 @@ final outcome = await search.run(() => repository.search(query));
 
 ### Recommendation
 
-Recommend **Shape A** for the MVP. The `OperationPolicy` enum keeps the API small. If `restartable`, `sequential` or `parallel` require parameters in v0.2.0, the public constructor can be widened to accept a `ConcurrencyPolicy` interface while preserving the enum values as convenience factories.
+Recommend **Shape A** for the MVP. The `OperationPolicy` enum keeps the API small. `restartable`, `sequential` and `parallel` shipped as further enum values, without parameters. A policy class would be a later change if a policy needs its own configuration.
 
 ## 3. Violations and Reporting
 
@@ -183,4 +183,4 @@ For v0.1.0 the owner is a thin wrapper; the diagnostic event is recorded in the 
 
 Shape A was accepted for both transition contracts and guarded operations. Transition contracts landed first, followed by guarded operations, the Flutter integration and the test matchers, all of which ship in 0.1.0.
 
-Two items from this document remain deliberately unimplemented and are tracked as non-goals in the README: policies that carry their own configuration (Shape B for operations), and rule-level conditional guards. Both would be considered in v0.2.0 alongside `restartable`, `sequential` and `parallel`.
+`restartable`, `sequential` and `parallel` shipped as enum values on `OperationPolicy`. Two items from this document remain unimplemented and are tracked as non-goals in the README: policies that carry their own configuration (Shape B for operations), and rule-level conditional guards.

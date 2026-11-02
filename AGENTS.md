@@ -14,7 +14,10 @@ This file records the repository layout, commands, architecture constraints and 
 ├── packages/
 │   ├── state_fence/          # Pure Dart core
 │   ├── state_fence_flutter/  # Flutter integration
-│   └── state_fence_test/     # Test utilities
+│   ├── state_fence_test/     # Test utilities
+│   ├── state_fence_bloc/     # Cubit adapter
+│   ├── state_fence_riverpod/ # Riverpod 2 Notifier mixin
+│   └── state_fence_provider/ # ChangeNotifier and Provider adapter
 ├── .github/workflows/ci.yml  # Format, analyse and test
 ├── AGENTS.md                 # This file
 └── README.md
@@ -31,20 +34,26 @@ dart format --set-exit-if-changed packages
 # Analyse
 dart analyze packages/state_fence
 dart analyze packages/state_fence_test
+dart analyze packages/state_fence_bloc
+dart analyze packages/state_fence_riverpod
 flutter analyze packages/state_fence_flutter
+flutter analyze packages/state_fence_provider
 
 # Test
 cd packages/state_fence && dart test
 cd packages/state_fence_flutter && flutter test
 cd packages/state_fence_test && dart test
+cd packages/state_fence_bloc && dart test
+cd packages/state_fence_riverpod && dart test
+cd packages/state_fence_provider && flutter test
 ```
 
 ## Publishing
 
-The three packages depend on each other, so publication order matters.
+Publication order matters because every other package depends on the core.
 
 1. `state_fence` first. Nothing depends on it being published.
-2. `state_fence_flutter` and `state_fence_test` once `state_fence` is live on pub.dev, because each declares a hosted `state_fence` constraint.
+2. Once `state_fence` is live on pub.dev, publish the packages that declare a hosted `state_fence` constraint: `state_fence_flutter`, `state_fence_test`, `state_fence_bloc`, `state_fence_riverpod` and `state_fence_provider`.
 
 Local development resolves the sibling core package through `pubspec_overrides.yaml`, never through `dependency_overrides` in `pubspec.yaml`. A relative path override inside a published `pubspec.yaml` cannot be resolved once the archive is extracted on its own, which breaks `dart pub get` for pub.dev analysis and drops the package score. Each `.pubignore` keeps `pubspec_overrides.yaml` out of the archive, and the `publish_readiness` CI job enforces both rules.
 
@@ -62,7 +71,7 @@ cd packages/state_fence_test && dart pub get --no-example
 - Time, scheduling, reporting and identifier generation must be injectable for deterministic testing.
 - Do not automatically serialise arbitrary application state.
 - Do not use reflection, code generation, global singletons, telemetry or network calls in the MVP.
-- No adapter for Riverpod, BLoC or any other framework until approved for a future phase.
+- Adapter packages are separate packages that depend on `state_fence`. The core must not depend on Riverpod, BLoC, Provider or Flutter.
 
 ## Documentation Style
 

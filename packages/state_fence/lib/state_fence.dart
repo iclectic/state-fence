@@ -15,6 +15,7 @@ export 'src/operation_policy.dart';
 export 'src/operation_token.dart';
 export 'src/redactor.dart';
 export 'src/reporter.dart';
+export 'src/retry_policy.dart';
 export 'src/state_fence.dart';
 export 'src/timeline.dart';
 export 'src/timeline_export.dart';

@@ -113,11 +113,36 @@ owner.dispose();
 
 ## FlutterErrorReporter
 
-`FlutterErrorReporter` forwards each `StateFenceViolation` to `FlutterError.reportError` as a `StateFenceViolationException`. The example uses it together with a collecting reporter so the same violation appears in the Flutter error console and in the on-screen diagnostics panel.
+`FlutterErrorReporter` forwards each `StateFenceViolation` to `FlutterError.reportError` as a `StateFenceViolationException`. The example uses it together with a collecting reporter so the same violation appears in the Flutter error console and in the on-screen inspector.
+
+## Build mode
+
+`stateFenceReporterForBuildMode` returns `FlutterErrorReporter` for debug and profile, and `DevNullReporter` for release. Profile is included because `kReleaseMode` is false there. Stack traces stay off unless the caller sets `captureStackTrace` on the fence. Pass `release: true` or `release: false` in tests. The core package does not import Flutter or `dart:developer`.
+
+```dart
+reporter: stateFenceReporterForBuildMode(),
+```
+
+## Inspector
+
+`StateFenceInspector` shows a timeline and a list of violations you already collected. Rebuild it when those change. It does not register a global listener, and it does not send data anywhere.
+
+```dart
+StateFenceInspector(
+  timeline: timeline,
+  violations: collected,
+)
+```
+
+The checkout screen in the example uses this widget. The other screens keep a private diagnostics panel.
+
+## ChangeNotifier
+
+`example/lib/change_notifier_checkout.dart` is application code. A `ChangeNotifier` holds the fence and calls `notifyListeners` only when the transition is accepted. Adapter packages for Provider, Riverpod and BLoC live in their own packages and are not imported by this sample.
 
 ## Run the example
 
-The example application is `packages/state_fence_flutter/example`. The checkout screen runs a `GuardedOperation` and applies `OperationSuccess`, `OperationFailure` and `OperationTimedOut` through `StateFence.transition`. It leaves the displayed state unchanged for `OperationIgnoredAsStale` and `OperationIgnoredAsDuplicate`, and it shows a rejected transition, a stuck-state violation and a redacted timeline. The stale search, duplicate submission and stuck loading screens are still there.
+The example application is `packages/state_fence_flutter/example`. The checkout screen runs a `GuardedOperation` and applies `OperationSuccess`, `OperationFailure` and `OperationTimedOut` through `StateFence.transition`. It leaves the displayed state unchanged for `OperationIgnoredAsStale` and `OperationIgnoredAsDuplicate`, and it shows a rejected transition, a stuck-state violation, a redacted timeline and a `StateFenceInspector`. A ChangeNotifier screen sits beside it. The stale search, duplicate submission and stuck loading screens are still there.
 
 From a clone of this repository:
 

@@ -95,7 +95,7 @@ jobs:
       # archive is extracted for pub.dev analysis, so fail the build early.
       - name: Reject path overrides in published pubspecs
         run: |
-          for package in state_fence state_fence_flutter state_fence_test; do
+          for package in state_fence state_fence_flutter state_fence_test state_fence_bloc state_fence_riverpod state_fence_provider; do
             if grep -q 'dependency_overrides' "packages/$package/pubspec.yaml"; then
               echo "::error::packages/$package/pubspec.yaml declares dependency_overrides."
               echo "Move local path overrides into pubspec_overrides.yaml instead."
@@ -104,7 +104,7 @@ jobs:
           done
       - name: Verify overrides are excluded from archives
         run: |
-          for package in state_fence_flutter state_fence_test; do
+          for package in state_fence_flutter state_fence_test state_fence_bloc state_fence_riverpod state_fence_provider; do
             test -f "packages/$package/.pubignore" || {
               echo "::error::packages/$package/.pubignore is missing."
               exit 1
@@ -147,6 +147,13 @@ jobs:
           flutter pub get
           dart doc --dry-run
           rm -rf doc
+      - name: Check adapter dartdoc
+        run: |
+          set -euo pipefail
+          for package in state_fence_bloc state_fence_riverpod; do
+            (cd "packages/$package" && dart pub get && dart doc --dry-run && rm -rf doc)
+          done
+          (cd packages/state_fence_provider && flutter pub get && dart doc --dry-run && rm -rf doc)
       # Before state_fence is on pub.dev, resolving the hosted dependency
       # fails. That is the only acceptable non-zero dry run. Exit 0 is
       # required once the core package is published.
@@ -205,3 +212,56 @@ jobs:
 
           check_package state_fence_flutter flutter
           check_package state_fence_test dart
+          check_package state_fence_bloc dart
+          check_package state_fence_riverpod dart
+          check_package state_fence_provider flutter
+
+  adapters:
+    name: adapter packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: state_fence_bloc
+        working-directory: packages/state_fence_bloc
+        run: |
+          dart pub get
+          dart format --set-exit-if-changed .
+          dart analyze --fatal-infos
+          dart test
+          dart run example/state_fence_bloc_example.dart
+      - name: state_fence_riverpod
+        working-directory: packages/state_fence_riverpod
+        run: |
+          dart pub get
+          dart format --set-exit-if-changed .
+          dart analyze --fatal-infos
+          dart test
+          dart run example/state_fence_riverpod_example.dart
+      - name: state_fence_provider
+        working-directory: packages/state_fence_provider
+        run: |
+          flutter pub get
+          dart format --set-exit-if-changed .
+          flutter analyze --fatal-infos
+          flutter test
+
+  pana:
+    name: pana (state_fence)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Install pana
+        run: dart pub global activate pana
+      - name: Score a copy of state_fence
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/state_fence_pana
+          cp -a packages/state_fence /tmp/state_fence_pana
+          rm -rf /tmp/state_fence_pana/.dart_tool
+          dart pub global run pana /tmp/state_fence_pana

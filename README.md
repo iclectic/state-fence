@@ -71,6 +71,15 @@ dev_dependencies:
   state_fence_test: ^0.1.0
 ```
 
+Optional adapters, after `state_fence` is on pub.dev. Each one depends on the core. The core does not depend on them.
+
+```yaml
+dependencies:
+  state_fence_bloc: ^0.1.0
+  state_fence_riverpod: ^0.1.0
+  state_fence_provider: ^0.1.0
+```
+
 ## Transition Contracts
 
 Declare which state-to-state movements are legal. Illegal transitions produce a structured violation and do not change the current state.
@@ -353,17 +362,21 @@ For strict tests where any violation should fail immediately, use `ThrowingRepor
 
 Call `fence.transition` before calling `setState`. Only update the UI when the transition is accepted.
 
-### ChangeNotifier or Provider
+### ChangeNotifier
 
-Hold a `StateFence` in your notifier. Call `transition` in each method that changes state. Notify listeners only on accepted transitions.
+Hold a `StateFence` in the notifier. Call `transition`, then `notifyListeners` only when the result is `TransitionAccepted`. The Flutter example does this in `packages/state_fence_flutter/example/lib/change_notifier_checkout.dart`.
+
+### Provider
+
+`state_fence_provider` provides `StateFenceController` and `stateFenceProvider`. Listeners are notified only when the fence accepts the transition.
 
 ### Riverpod
 
-Use a `StateNotifier` or `Notifier` that holds a `StateFence`. Call `transition` before assigning to `state`. Use `GuardedOperation` inside `AsyncNotifier` to protect against stale async results.
+`state_fence_riverpod` provides `StateFenceNotifierMixin`. Call `attachFence` from `build`. `transition` assigns `state` only when the fence accepts it. The mixin targets Riverpod 2 `Notifier`.
 
 ### BLoC or Cubit
 
-Hold a `StateFence` in your bloc. Call `transition` in each event handler before emitting a new state. Use `GuardedOperation` for async event handlers that produce state.
+`state_fence_bloc` provides `StateFenceCubit`. `transition` emits only when the fence accepts, and `close` disposes the fence.
 
 ### Search-as-you-type
 
@@ -379,23 +392,24 @@ Use `GuardedOperation` with a `timeout` so a stuck refresh call resolves with `O
 
 ## Limitations and Non-Goals
 
-- StateFence does not replace `Riverpod`, `BLoC`, `Provider`, `ChangeNotifier` or `setState`.
-- StateFence does not provide production application-performance monitoring, network inspection or general logging.
+- StateFence does not replace `Riverpod`, `BLoC`, `Provider`, `ChangeNotifier` or `setState`. Optional adapter packages sit beside an existing state holder. The core does not depend on those frameworks.
+- StateFence does not provide production application-performance monitoring, network inspection or general logging. `StateFenceInspector` is an on-device view of a timeline you already hold.
 - StateFence is not a replacement for Flutter DevTools.
-- `restartable`, `sequential` and `parallel` operation policies are planned for v0.2.0.
-- Retry policies with exponential backoff are planned for v0.2.0.
-- Riverpod and BLoC adapter packages are planned for v0.2.0.
-- An in-app inspector is planned for v0.3.0.
-- Dart futures are not cancelable. A timeout resolves the outcome immediately and discards the late result, but the underlying work continues until it settles on its own.
+- `RetryPolicy` reruns one action after a thrown failure. It does not retry a timeout, and it is not a data client.
+- Dart futures are not cancelable. A timeout resolves the outcome immediately and discards the late result, but the underlying work continues until it settles on its own. `restartable` completes the previous future as stale immediately and still does not cancel the action.
 - `allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
+- Conditional transition guards, and policies that carry their own configuration, are outside this release.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| `state_fence` | Pure Dart core. Transition rules, guarded operations, stuck-state detection, diagnostics and redaction. |
-| `state_fence_flutter` | Flutter integration. Lifecycle ownership and `FlutterErrorReporter`. |
+| `state_fence` | Pure Dart core. Transition rules, guarded operations, retry, stuck-state detection, diagnostics and redaction. |
+| `state_fence_flutter` | Flutter integration. Lifecycle ownership, build-mode reporting and an opt-in inspector. |
 | `state_fence_test` | Matchers, `CollectingReporter`, `ThrowingReporter` and deterministic fakes. |
+| `state_fence_bloc` | `StateFenceCubit`. Emits only when the fence accepts the transition. |
+| `state_fence_riverpod` | `StateFenceNotifierMixin` for a Riverpod 2 `Notifier`. |
+| `state_fence_provider` | `StateFenceController` and `stateFenceProvider`. |
 
 ## Contribution and Support Policy
 

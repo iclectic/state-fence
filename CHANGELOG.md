@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TransitionResult<S>` sealed hierarchy: `TransitionAccepted<S>` and `TransitionRejected<S>`.
 - `StateFenceViolation` sealed hierarchy: `TransitionViolation`, `OperationTimeoutViolation`, `StuckStateViolation` and `UseAfterDisposeViolation`, each with source, timestamp, operation, safe metadata, stack trace and reason.
 - `StateFenceReporter` interface and `DevNullReporter` default. Throwing reporters enable strict mode at synchronous call sites; timeline events are always recorded before the reporter is invoked.
-- `GuardedOperation<T>` with `OperationPolicy.latestWins` and `OperationPolicy.firstWins`.
+- `GuardedOperation<T>` with `OperationPolicy.latestWins`, `OperationPolicy.firstWins`, `OperationPolicy.restartable`, `OperationPolicy.sequential` and `OperationPolicy.parallel`.
+- Optional `RetryPolicy` on `GuardedOperation`. It reruns a failed action with scheduler-driven backoff and does not retry timeouts.
 - `OperationOutcome<T>` sealed hierarchy: `OperationSuccess`, `OperationFailure`, `OperationIgnoredAsStale`, `OperationIgnoredAsDuplicate` and `OperationTimedOut`.
 - Timeouts resolve the `run` future with `OperationTimedOut` as soon as they fire, so callers are never left waiting on a stuck operation. Late results are discarded. Under `firstWins`, a timed-out invocation no longer blocks a retry.
 - Stuck-state detection on `StateFence` via `stuckStateTimeouts`, reporting `StuckStateViolation` and recording `StateStuckEvent` when a transitional state exceeds its declared maximum duration.
@@ -37,7 +38,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StateFenceStateMixin` for automatic disposal on `State.dispose`.
 - `FlutterErrorReporter` forwarding violations to `FlutterError.reportError` with per-violation diagnostic properties.
 - `StateFenceViolationException` wrapping violations for Flutter's error pipeline.
-- Example application with a checkout screen that applies guarded outcomes through a `StateFence`, plus the stale search, duplicate submission and stuck loading scenarios.
+- `stateFenceReporterForBuildMode` and opt-in `StateFenceInspector`.
+- Example application with a checkout screen, a ChangeNotifier sample, and the stale search, duplicate submission and stuck loading scenarios.
+- Screenshots of the Flutter example.
 
 #### state_fence_test
 
@@ -47,6 +50,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ThrowingReporter` for strict tests.
 - `hasNoViolations` matcher, which accepts a `CollectingReporter` directly or any iterable of violations and lists the offending violations on mismatch.
 - Re-exports of `FakeFenceScheduler`, `FenceSchedulerClock` and `MonotonicTokenGenerator`.
+
+#### state_fence_bloc
+
+- `StateFenceCubit<S>`, which emits only when its fence accepts the transition.
+
+#### state_fence_riverpod
+
+- `StateFenceNotifierMixin<S>` for a Riverpod 2 `Notifier`. `transition` assigns `state` only when the fence accepts it.
+
+#### state_fence_provider
+
+- `StateFenceController<S>` and `stateFenceProvider`. Listeners are notified only when the fence accepts the transition.
 
 ### Changed
 

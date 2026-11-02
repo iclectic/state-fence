@@ -20,3 +20,4 @@ The package must behave safely in release builds while remaining useful in devel
 - No runtime overhead in release unless the user enables diagnostics.
 - Consumers choose how to surface violations in their reporting infrastructure.
 - The core package remains build-mode agnostic.
+- `state_fence_flutter` provides `stateFenceReporterForBuildMode`. Debug and profile builds use `FlutterErrorReporter`. Release builds use `DevNullReporter`. Stack traces stay off unless the caller sets `captureStackTrace`.

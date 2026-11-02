@@ -173,9 +173,19 @@ Run it from this package with `dart run example/state_fence_example.dart`. The c
 
 ## Policies
 
-`OperationPolicy.latestWins` accepts only the newest invocation. Older in-flight results complete as `OperationIgnoredAsStale`. Use it for search-as-you-type.
+`OperationPolicy.latestWins` accepts only the newest invocation. Older in-flight results complete as `OperationIgnoredAsStale` when they settle. Use it for search-as-you-type.
 
-`OperationPolicy.firstWins` ignores a new invocation while one is already in flight, and completes it as `OperationIgnoredAsDuplicate`. Use it for save and payment buttons. After a timeout, that invocation no longer blocks a retry.
+`OperationPolicy.firstWins` ignores a new invocation while one is already in flight, and completes it as `OperationIgnoredAsDuplicate`. Use it for save and payment buttons. After a timeout, that invocation no longer blocks a new run.
+
+`OperationPolicy.restartable` matches `latestWins`, and it also completes the previous future as `OperationIgnoredAsStale` as soon as a newer run starts. The previous action is not cancelled.
+
+`OperationPolicy.sequential` runs calls one at a time, in the order they were started. A later call waits until the earlier one has been accepted, has failed or has timed out. Queued calls are not duplicates.
+
+`OperationPolicy.parallel` accepts every invocation, including ones that overlap. Each call still has its own timeout.
+
+## Retry
+
+Pass a `RetryPolicy` to `GuardedOperation` to rerun the action after a thrown failure. `maxAttempts` includes the first run. Delays grow from `initialDelay` by `multiplier` and stop at `maxDelay`. The delay uses the same `FenceScheduler` as timeouts, so tests advance it with `FakeFenceScheduler.elapse`. Timeouts, stale results and duplicates are not retried. This is not a data client.
 
 ## Timeouts
 
@@ -191,7 +201,7 @@ Attach a `Timeline` to the fence and the operation, then call `exportTimelineJso
 
 ## Limits
 
-- The default reporter is `DevNullReporter`. It is silent. Pass a reporter when you also want violations surfaced. `state_fence_flutter` provides `FlutterErrorReporter`. `state_fence_test` provides `CollectingReporter` and `ThrowingReporter`.
+- The default reporter is `DevNullReporter`. It is silent. Pass a reporter when you also want violations surfaced. `state_fence_flutter` provides `FlutterErrorReporter` and `stateFenceReporterForBuildMode`, which reports in debug and profile and stays silent in release. `state_fence_test` provides `CollectingReporter` and `ThrowingReporter`.
 - `allow<F, T>()` matches `runtimeType`. It does not check the state hierarchy at compile time.
 - A timeout does not cancel the future. Dart futures are not cancellable. The late result is ignored.
 - The fence does not rebuild widgets. Update your own state holder only from `TransitionAccepted`.

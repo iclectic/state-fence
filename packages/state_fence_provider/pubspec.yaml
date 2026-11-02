@@ -1,0 +1,29 @@
+name: state_fence_provider
+description: >-
+  ChangeNotifier adapter for state_fence. Notifies listeners only when the
+  fence accepts the transition.
+version: 0.1.0
+
+repository: https://github.com/iclectic/state-fence/tree/main/packages/state_fence_provider
+issue_tracker: https://github.com/iclectic/state-fence/issues
+
+topics:
+  - state-management
+  - testing
+  - diagnostics
+  - flutter
+
+environment:
+  sdk: ^3.0.0
+  flutter: '>=3.16.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.2
+  state_fence: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  flutter_test:
+    sdk: flutter

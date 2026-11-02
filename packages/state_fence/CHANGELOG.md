@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TransitionResult<S>` sealed hierarchy: `TransitionAccepted<S>` and `TransitionRejected<S>`.
 - `StateFenceViolation` sealed hierarchy: `TransitionViolation`, `OperationTimeoutViolation`, `StuckStateViolation` and `UseAfterDisposeViolation`, each with source, timestamp, operation, safe metadata, stack trace and reason.
 - `StateFenceReporter` interface and `DevNullReporter` default. Throwing reporters enable strict mode at synchronous call sites; timeline events are always recorded before the reporter is invoked.
-- `GuardedOperation<T>` with `OperationPolicy.latestWins` and `OperationPolicy.firstWins`.
+- `GuardedOperation<T>` with `OperationPolicy.latestWins`, `OperationPolicy.firstWins`, `OperationPolicy.restartable`, `OperationPolicy.sequential` and `OperationPolicy.parallel`. `latestWins` and `firstWins` keep their existing behaviour.
+- Optional `RetryPolicy` on `GuardedOperation`. It reruns the action after a thrown failure, with scheduler-driven backoff. It does not retry timeouts, stale results or duplicates, and it is not a data client.
 - `OperationOutcome<T>` sealed hierarchy: `OperationSuccess`, `OperationFailure`, `OperationIgnoredAsStale`, `OperationIgnoredAsDuplicate` and `OperationTimedOut`.
 - Timeouts resolve the `run` future with `OperationTimedOut` as soon as they fire, so callers are never left waiting on a stuck operation. Late results are discarded. Under `firstWins`, a timed-out invocation no longer blocks a retry.
 - Stuck-state detection on `StateFence` via `stuckStateTimeouts`, reporting `StuckStateViolation` and recording `StateStuckEvent` when a transitional state exceeds its declared maximum duration.

@@ -1,0 +1,2 @@
+# Local monorepo path overrides must never ship in the published archive.
+pubspec_overrides.yaml

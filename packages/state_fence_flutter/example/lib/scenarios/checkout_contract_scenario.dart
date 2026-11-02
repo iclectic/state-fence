@@ -5,7 +5,6 @@ import 'package:state_fence/state_fence.dart';
 import 'package:state_fence_flutter/state_fence_flutter.dart';
 
 import '../diagnostics.dart';
-import '../widgets/diagnostics_panel.dart';
 import '../widgets/scenario_page.dart';
 import '../widgets/status_pill.dart';
 
@@ -330,9 +329,9 @@ class _CheckoutContractScenarioState extends State<CheckoutContractScenario>
           ],
         ),
         const SizedBox(height: 12),
-        DiagnosticsPanel(
+        StateFenceInspector(
+          timeline: _diag.timeline,
           violations: _diag.reporter.violations,
-          eventCount: _diag.timeline.length,
         ),
       ],
     );
@@ -352,7 +351,7 @@ class _FanOutReporter implements StateFenceReporter {
 
   final CollectingReporter collecting;
   final VoidCallback onReported;
-  final FlutterErrorReporter flutterReporter = const FlutterErrorReporter();
+  final StateFenceReporter flutterReporter = stateFenceReporterForBuildMode();
 
   @override
   void report(StateFenceViolation violation) {
