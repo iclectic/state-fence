@@ -27,10 +27,7 @@ StateFence<SearchState> buildFence({StateFenceReporter? reporter}) {
   return StateFence<SearchState>(
     name: 'search',
     initialState: const Idle(),
-    rules: [
-      allow<Idle, Loading>(),
-      allow<Loading, Data>(),
-    ],
+    rules: [allow<Idle, Loading>(), allow<Loading, Data>()],
     reporter: reporter,
   );
 }
@@ -55,12 +52,20 @@ void main() {
   });
 
   test('outcome matchers read guarded operation results', () async {
+    final older = Completer<int>();
+    final newer = Completer<int>();
     final op = GuardedOperation<int>(
       name: 'load',
       policy: OperationPolicy.latestWins,
     );
 
-    expect(await op.run(() async => 42), isOperationSuccess(value: 42));
+    final olderFuture = op.run(() => older.future);
+    final newerFuture = op.run(() => newer.future);
+    newer.complete(2);
+    older.complete(1);
+
+    expect(await newerFuture, isOperationSuccess(value: 2));
+    expect(await olderFuture, isIgnoredAsStale);
   });
 
   test('FakeFenceScheduler drives timeouts without real waiting', () async {

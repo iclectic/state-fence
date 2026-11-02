@@ -13,5 +13,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StateFenceStateMixin` for automatic disposal on `State.dispose`.
 - `FlutterErrorReporter` forwarding violations to `FlutterError.reportError`.
 - `StateFenceViolationException` wrapping violations for Flutter's error pipeline.
-- Example application with three failure scenarios: stale search, duplicate submission and stuck loading.
+- Example application with a checkout screen that applies guarded outcomes through a `StateFence`, plus the stale search, duplicate submission and stuck loading scenarios.
 - 9 widget and unit tests covering ownership, disposal, mixin integration and reporter forwarding.

@@ -84,9 +84,7 @@ void main() {
     });
 
     test('supports transition from an error state back to loading', () {
-      final fence = _createFence(
-        initial: const _Error('failed'),
-      );
+      final fence = _createFence(initial: const _Error('failed'));
       final result = fence.transition(const _Loading());
 
       expect(result, isA<TransitionAccepted<_SearchState>>());
@@ -153,10 +151,12 @@ void main() {
 
       final rejected = result as TransitionRejected<_SearchState>;
       expect(
-        rejected.violation.timestamp
-                .isAfter(before.subtract(const Duration(seconds: 1))) &&
-            rejected.violation.timestamp
-                .isBefore(after.add(const Duration(seconds: 1))),
+        rejected.violation.timestamp.isAfter(
+              before.subtract(const Duration(seconds: 1)),
+            ) &&
+            rejected.violation.timestamp.isBefore(
+              after.add(const Duration(seconds: 1)),
+            ),
         isTrue,
       );
     });
@@ -165,10 +165,7 @@ void main() {
       final reporter = _CollectingReporter();
       final fence = _createFence(reporter: reporter);
 
-      fence.transition(
-        const _Other(),
-        metadata: {'query': 'books'},
-      );
+      fence.transition(const _Other(), metadata: {'query': 'books'});
 
       final metadata = reporter.violations.single.safeMetadata;
       expect(() => metadata['query'] = 'changed', throwsUnsupportedError);

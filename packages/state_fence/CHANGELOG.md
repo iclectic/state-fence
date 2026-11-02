@@ -28,3 +28,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`. Metadata values that JSON cannot represent natively, such as `DateTime`, are encoded with `toString` so a diagnostic export never throws.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with `UseAfterDisposeViolation` reporting.
 - Unit tests covering transitions, race conditions, timeouts, retry-after-timeout, disposal, stuck states, ring-buffer overflow, subtree redaction and throwing reporters.
+- Console example that applies guarded outcomes through `StateFence.transition`, prints a rejected transition, and prints a stuck-state event. Stale and duplicate outcomes leave the UI variable unchanged.

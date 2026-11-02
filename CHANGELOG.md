@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `MetadataRedactor` with default sensitive key redaction, custom callback support and recursive redaction. A sensitive key redacts its entire subtree, including nested maps and lists. Redaction is total: maps with non-`String` keys are stringified, non-`List` iterables are converted to lists, and recursion is bounded by `maxDepth` so cyclic or pathologically nested metadata is truncated rather than crashing or hanging.
 - `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`. Metadata values that JSON cannot represent natively, such as `DateTime`, are encoded with `toString` so a diagnostic export never throws.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with `UseAfterDisposeViolation` reporting.
-- Console example demonstrating transition contracts, stale-result discarding and non-hanging timeouts.
+- Console example that applies guarded outcomes through `StateFence.transition`, prints a rejected transition, and prints a stuck-state event. Stale and duplicate outcomes leave the UI variable unchanged.
 
 #### state_fence_flutter
 
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `StateFenceStateMixin` for automatic disposal on `State.dispose`.
 - `FlutterErrorReporter` forwarding violations to `FlutterError.reportError` with per-violation diagnostic properties.
 - `StateFenceViolationException` wrapping violations for Flutter's error pipeline.
-- Example application with three failure scenarios: stale search, duplicate submission and stuck loading.
+- Example application with a checkout screen that applies guarded outcomes through a `StateFence`, plus the stale search, duplicate submission and stuck loading scenarios.
 
 #### state_fence_test
 

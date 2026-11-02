@@ -33,7 +33,23 @@ Without `latestWins`, the slow "a" response would overwrite the newer "abc" resu
 
 ## Installation
 
-Add StateFence to your `pubspec.yaml`:
+These packages are not on pub.dev yet. Clone this repository and let `pubspec_overrides.yaml` resolve the sibling packages. Those override files are for local development. They are not part of a published archive.
+
+From a clone:
+
+```sh
+cd packages/state_fence
+dart pub get
+dart test
+
+cd ../state_fence_flutter/example
+flutter pub get
+flutter run
+```
+
+`packages/state_fence_flutter/pubspec_overrides.yaml` and `packages/state_fence_test/pubspec_overrides.yaml` point `state_fence` at the sibling core. The Flutter example override points both packages at this checkout. `dart pub add state_fence` cannot resolve the packages until they are published.
+
+After publication, the consumer coordinates will be:
 
 ```yaml
 dependencies:

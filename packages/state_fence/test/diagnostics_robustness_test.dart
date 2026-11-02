@@ -44,12 +44,13 @@ void main() {
       const redactor = MetadataRedactor();
 
       expect(
-          redactor.redact({
-            'ids': {1, 2, 3}
-          }),
-          {
-            'ids': [1, 2, 3],
-          });
+        redactor.redact({
+          'ids': {1, 2, 3},
+        }),
+        {
+          'ids': [1, 2, 3],
+        },
+      );
     });
 
     test('truncates instead of recursing forever on a self-reference', () {
@@ -60,10 +61,7 @@ void main() {
       final result = redactor.redact(cyclic) as Map<String, Object?>;
 
       expect(result['name'], 'root');
-      expect(
-        const JsonEncoder().convert(result),
-        contains('<truncated>'),
-      );
+      expect(const JsonEncoder().convert(result), contains('<truncated>'));
     });
 
     test('truncates nesting deeper than maxDepth', () {
@@ -126,21 +124,23 @@ void main() {
   });
 
   group('FakeFenceScheduler', () {
-    test('fires a timer scheduled inside a callback in chronological order',
-        () {
-      final scheduler = FakeFenceScheduler();
-      final fired = <String>[];
+    test(
+      'fires a timer scheduled inside a callback in chronological order',
+      () {
+        final scheduler = FakeFenceScheduler();
+        final fired = <String>[];
 
-      scheduler.timer(const Duration(seconds: 5), () {
-        fired.add('outer');
-        scheduler.timer(const Duration(seconds: 1), () => fired.add('inner'));
-      });
-      scheduler.timer(const Duration(seconds: 10), () => fired.add('late'));
+        scheduler.timer(const Duration(seconds: 5), () {
+          fired.add('outer');
+          scheduler.timer(const Duration(seconds: 1), () => fired.add('inner'));
+        });
+        scheduler.timer(const Duration(seconds: 10), () => fired.add('late'));
 
-      scheduler.elapse(const Duration(seconds: 20));
+        scheduler.elapse(const Duration(seconds: 20));
 
-      expect(fired, ['outer', 'inner', 'late']);
-    });
+        expect(fired, ['outer', 'inner', 'late']);
+      },
+    );
 
     test('never moves the clock backwards for a zero-duration timer', () {
       final scheduler = FakeFenceScheduler(initialTime: DateTime.utc(2026));
@@ -158,7 +158,9 @@ void main() {
         DateTime.utc(2026).add(const Duration(seconds: 5)),
       ]);
       expect(
-          scheduler.now(), DateTime.utc(2026).add(const Duration(seconds: 10)));
+        scheduler.now(),
+        DateTime.utc(2026).add(const Duration(seconds: 10)),
+      );
     });
 
     test('honours a timer cancelled by an earlier callback', () {
@@ -195,10 +197,9 @@ void main() {
 
       await operation.run(() async => 1);
 
-      expect(
-        timeline.events.map((e) => e.timestamp).toSet(),
-        {_FixedClock.instant},
-      );
+      expect(timeline.events.map((e) => e.timestamp).toSet(), {
+        _FixedClock.instant,
+      });
       operation.dispose();
     });
   });

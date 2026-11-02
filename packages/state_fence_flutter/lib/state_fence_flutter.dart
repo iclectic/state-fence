@@ -5,6 +5,8 @@
 /// Flutter's standard error reporting pipeline.
 library;
 
+import 'package:state_fence/state_fence.dart';
+
 export 'src/lifecycle/state_fence_owner.dart';
 export 'src/lifecycle/state_fence_state_mixin.dart';
 export 'src/reporting/flutter_error_reporter.dart';

@@ -114,18 +114,94 @@ jobs:
               exit 1
             }
           done
+      # The core archive must be publishable on its own. A listed
+      # pubspec_overrides.yaml, including one under example/, fails the job.
       - name: Validate state_fence archive
         working-directory: packages/state_fence
         run: |
+          set -euo pipefail
           dart pub get
-          dart pub publish --dry-run
-      - name: Confirm archives omit pubspec_overrides.yaml
+          set +e
+          output=$(dart pub publish --dry-run 2>&1)
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -ne 0 ]; then
+            echo "::error::dart pub publish --dry-run failed for state_fence (exit $status)."
+            exit 1
+          fi
+          file_list=$(printf '%s\n' "$output" | sed -n '/^Publishing /,/^Total compressed archive size/p')
+          if printf '%s\n' "$file_list" | grep -q 'pubspec_overrides.yaml'; then
+            echo "::error::state_fence archive lists pubspec_overrides.yaml."
+            exit 1
+          fi
+      - name: Check state_fence_test dartdoc
+        working-directory: packages/state_fence_test
         run: |
-          for package in state_fence_flutter state_fence_test; do
-            (cd "packages/$package" && flutter pub get >/dev/null)
-            if (cd "packages/$package" && flutter pub publish --dry-run 2>&1) \
-                | grep -q 'pubspec_overrides.yaml'; then
-              echo "::error::packages/$package would publish pubspec_overrides.yaml."
+          dart pub get
+          dart doc --dry-run
+          rm -rf doc
+      - name: Check state_fence_flutter dartdoc
+        working-directory: packages/state_fence_flutter
+        run: |
+          flutter pub get
+          dart doc --dry-run
+          rm -rf doc
+      # Before state_fence is on pub.dev, resolving the hosted dependency
+      # fails. That is the only acceptable non-zero dry run. Exit 0 is
+      # required once the core package is published.
+      - name: Validate dependent package archives
+        run: |
+          set -euo pipefail
+
+          unresolved_core_only() {
+            local output="$1"
+            local resolution other
+            resolution=$(printf '%s\n' "$output" | grep -E 'state_fence' | grep -E -i "could not find package|doesn't exist|does not exist|version solving failed|no versions|not exist" || true)
+            if [ -z "$resolution" ]; then
+              return 1
+            fi
+            # pub lists each package problem as a "* " bullet. A bullet that
+            # does not mention state_fence is a different failure.
+            other=$(printf '%s\n' "$output" | grep -E '^\* ' | grep -v -E 'state_fence' || true)
+            if [ -n "$other" ]; then
+              printf '%s\n' "$other"
+              return 1
+            fi
+            return 0
+          }
+
+          check_package() {
+            local package="$1"
+            local tool="$2"
+            local output status
+            echo "::group::$package"
+            (cd "packages/$package" && "$tool" pub get >/dev/null)
+            set +e
+            output=$(cd "packages/$package" && "$tool" pub publish --dry-run 2>&1)
+            status=$?
+            set -e
+            printf '%s\n' "$output"
+            file_list=$(printf '%s\n' "$output" | sed -n '/^Publishing /,/^Total compressed archive size/p')
+            if printf '%s\n' "$file_list" | grep -q 'pubspec_overrides.yaml'; then
+              echo "::error::$package would publish pubspec_overrides.yaml."
+              echo "::endgroup::"
               exit 1
             fi
-          done
+            if [ "$status" -eq 0 ]; then
+              echo "$package dry run exited 0."
+              echo "::endgroup::"
+              return 0
+            fi
+            if unresolved_core_only "$output"; then
+              echo "$package dry run failed only because hosted state_fence cannot be resolved."
+              echo "::endgroup::"
+              return 0
+            fi
+            echo "::error::$package dry run failed for a reason other than an unresolved hosted state_fence package (exit $status)."
+            echo "::endgroup::"
+            exit 1
+          }
+
+          check_package state_fence_flutter flutter
+          check_package state_fence_test dart

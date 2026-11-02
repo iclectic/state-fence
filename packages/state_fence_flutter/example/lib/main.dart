@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'scenarios/checkout_contract_scenario.dart';
 import 'scenarios/duplicate_submission_scenario.dart';
 import 'scenarios/stale_search_scenario.dart';
 import 'scenarios/stuck_loading_scenario.dart';
@@ -51,6 +52,13 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scenarios = <_Scenario>[
+      _Scenario(
+        title: 'Checkout contract',
+        summary: 'A fence, a guarded payment and a redacted timeline.',
+        icon: Icons.rule,
+        accent: const Color(0xFF7C3AED),
+        builder: (_) => const CheckoutContractScenario(),
+      ),
       _Scenario(
         title: 'Stale search response',
         summary: 'A slow older request overwrites newer results.',
@@ -182,9 +190,8 @@ class _ScenarioCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: () => Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(builder: scenario.builder),
-        ),
+        onTap: () => Navigator.of(context)
+            .push<void>(MaterialPageRoute<void>(builder: scenario.builder)),
         child: Padding(
           padding: const EdgeInsets.all(18),
           child: Row(

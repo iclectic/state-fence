@@ -22,10 +22,7 @@ StateFence<_SearchState> _createFence({StateFenceReporter? reporter}) {
   return StateFence<_SearchState>(
     name: 'search',
     initialState: const _Idle(),
-    rules: [
-      allow<_Idle, _Loading>(),
-      allow<_Loading, _Data>(),
-    ],
+    rules: [allow<_Idle, _Loading>(), allow<_Loading, _Data>()],
     reporter: reporter,
   );
 }
@@ -78,8 +75,10 @@ void main() {
       );
 
       expect(await nullable.run(() async => null), isOperationSuccess());
-      expect(await nullable.run(() async => null),
-          isOperationSuccess(value: null));
+      expect(
+        await nullable.run(() async => null),
+        isOperationSuccess(value: null),
+      );
       expect(
         await nonNull.run(() async => 1),
         isNot(isOperationSuccess(value: null)),
@@ -169,8 +168,10 @@ void main() {
           isA<TestFailure>().having(
             (failure) => failure.message,
             'message',
-            allOf(contains('reported 1 violation(s)'),
-                contains('TransitionViolation')),
+            allOf(
+              contains('reported 1 violation(s)'),
+              contains('TransitionViolation'),
+            ),
           ),
         ),
       );

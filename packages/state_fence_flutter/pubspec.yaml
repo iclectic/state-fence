@@ -4,7 +4,7 @@ description: >-
   guarded operations, plus a reporter that forwards violations to FlutterError.
 version: 0.1.0
 
-repository: https://github.com/iclectic/state-fence
+repository: https://github.com/iclectic/state-fence/tree/main/packages/state_fence_flutter
 issue_tracker: https://github.com/iclectic/state-fence/issues
 
 topics:

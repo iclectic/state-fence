@@ -50,8 +50,9 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
     });
 
     // This request never completes; the timeout resolves the outcome.
-    final OperationOutcome<String> outcome =
-        await _refresh.run(() => Completer<String>().future);
+    final OperationOutcome<String> outcome = await _refresh.run(
+      () => Completer<String>().future,
+    );
 
     if (!mounted) return;
     setState(() {
@@ -114,16 +115,18 @@ class _StuckLoadingScenarioState extends State<StuckLoadingScenario>
                         const SizedBox(height: 16),
                         Text(
                           'Loading... resolves via timeout in 3s',
-                          style: text.bodyMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                          style: text.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     )
                   : _statusText == null
                       ? Text(
                           'Idle. Start a refresh to see the timeout guard.',
-                          style: text.bodyMedium
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                          style: text.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
                         )
                       : Column(
                           children: [

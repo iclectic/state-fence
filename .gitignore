@@ -3,6 +3,7 @@
 build/
 .packages
 pubspec.lock
+doc/
 
 # IDE and editor configuration
 .idea/

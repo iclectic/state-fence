@@ -97,27 +97,29 @@ void main() {
       expect(failure.error, isA<StateError>());
     });
 
-    test('ignores an older failure as stale when a newer call is accepted',
-        () async {
-      final Completer<int> older = Completer<int>();
-      final Completer<int> newer = Completer<int>();
+    test(
+      'ignores an older failure as stale when a newer call is accepted',
+      () async {
+        final Completer<int> older = Completer<int>();
+        final Completer<int> newer = Completer<int>();
 
-      final op = GuardedOperation<int>(
-        name: 'search',
-        policy: OperationPolicy.latestWins,
-      );
+        final op = GuardedOperation<int>(
+          name: 'search',
+          policy: OperationPolicy.latestWins,
+        );
 
-      final olderFuture = op.run(() => older.future);
-      final newerFuture = op.run(() => newer.future);
+        final olderFuture = op.run(() => older.future);
+        final newerFuture = op.run(() => newer.future);
 
-      newerCompleter(newer, 7);
-      await newerFuture;
+        newerCompleter(newer, 7);
+        await newerFuture;
 
-      olderCompleterError(older, StateError('too late'));
-      final olderOutcome = await olderFuture;
+        olderCompleterError(older, StateError('too late'));
+        final olderOutcome = await olderFuture;
 
-      expect(olderOutcome, isA<OperationIgnoredAsStale<int>>());
-    });
+        expect(olderOutcome, isA<OperationIgnoredAsStale<int>>());
+      },
+    );
 
     test('resolves with OperationTimedOut when the timeout fires', () async {
       final reporter = _CollectingReporter();
@@ -302,7 +304,9 @@ void main() {
 
       expect(outcome, isA<OperationFailure<int>>());
       expect(
-          reporter.violations.any((v) => v.reason.contains('dispose')), isTrue);
+        reporter.violations.any((v) => v.reason.contains('dispose')),
+        isTrue,
+      );
     });
   });
 }

@@ -45,22 +45,34 @@ Matcher isOperationSuccess({Object? value = _unspecified}) =>
     );
 
 /// Matches an [OperationOutcome] that is an [OperationFailure].
-const Matcher isOperationFailure =
-    _OutcomeMatcher<OperationFailure<Object?>>('OperationFailure', null, null);
+const Matcher isOperationFailure = _OutcomeMatcher<OperationFailure<Object?>>(
+  'OperationFailure',
+  null,
+  null,
+);
 
 /// Matches an [OperationOutcome] that is an [OperationIgnoredAsStale].
 const Matcher isIgnoredAsStale =
     _OutcomeMatcher<OperationIgnoredAsStale<Object?>>(
-        'OperationIgnoredAsStale', null, null);
+  'OperationIgnoredAsStale',
+  null,
+  null,
+);
 
 /// Matches an [OperationOutcome] that is an [OperationIgnoredAsDuplicate].
 const Matcher isIgnoredAsDuplicate =
     _OutcomeMatcher<OperationIgnoredAsDuplicate<Object?>>(
-        'OperationIgnoredAsDuplicate', null, null);
+  'OperationIgnoredAsDuplicate',
+  null,
+  null,
+);
 
 /// Matches an [OperationOutcome] that is an [OperationTimedOut].
 const Matcher isOperationTimedOut = _OutcomeMatcher<OperationTimedOut<Object?>>(
-    'OperationTimedOut', null, null);
+  'OperationTimedOut',
+  null,
+  null,
+);
 
 /// Matches a [CollectingReporter] or an [Iterable] of violations that holds no
 /// violations at all.
@@ -158,13 +170,15 @@ class _NoViolationsMatcher extends Matcher {
   ) {
     final violations = matchState['violations'];
     if (violations is! List<StateFenceViolation>) {
-      return mismatchDescription
-          .add('is not a CollectingReporter or an iterable of violations');
+      return mismatchDescription.add(
+        'is not a CollectingReporter or an iterable of violations',
+      );
     }
     mismatchDescription.add('reported ${violations.length} violation(s):');
     for (final violation in violations) {
-      mismatchDescription
-          .add('\n  ${violation.runtimeType}: ${violation.reason}');
+      mismatchDescription.add(
+        '\n  ${violation.runtimeType}: ${violation.reason}',
+      );
     }
     return mismatchDescription;
   }

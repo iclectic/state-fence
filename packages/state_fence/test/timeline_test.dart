@@ -94,17 +94,11 @@ void main() {
       const redactor = MetadataRedactor();
 
       final result = redactor.redact({
-        'user': {
-          'name': 'alice',
-          'secret': 'topsecret',
-        },
+        'user': {'name': 'alice', 'secret': 'topsecret'},
       });
 
       expect(result, {
-        'user': {
-          'name': 'alice',
-          'secret': '<redacted>',
-        },
+        'user': {'name': 'alice', 'secret': '<redacted>'},
       });
     });
 
@@ -129,31 +123,20 @@ void main() {
     test('matches keys case-insensitively', () {
       const redactor = MetadataRedactor();
 
-      final result = redactor.redact({
-        'Password': 'x',
-        'TOKEN': 'y',
-      });
+      final result = redactor.redact({'Password': 'x', 'TOKEN': 'y'});
 
-      expect(result, {
-        'Password': '<redacted>',
-        'TOKEN': '<redacted>',
-      });
+      expect(result, {'Password': '<redacted>', 'TOKEN': '<redacted>'});
     });
 
     test('uses a custom redactor callback when provided', () {
-      const redactor = MetadataRedactor(
-        redactor: _customRedactor,
-      );
+      const redactor = MetadataRedactor(redactor: _customRedactor);
 
       final result = redactor.redact({
         'iban': 'GB00WESTERN123',
         'password': 'hunter2',
       });
 
-      expect(result, {
-        'iban': '<custom-redacted>',
-        'password': '<redacted>',
-      });
+      expect(result, {'iban': '<custom-redacted>', 'password': '<redacted>'});
     });
 
     test('returns scalars unchanged at the top level', () {
@@ -245,10 +228,7 @@ void main() {
       final violation = event['violation'] as Map;
 
       expect(violation['type'], 'transition');
-      expect(violation['safeMetadata'], {
-        'token': '<redacted>',
-        'amount': 100,
-      });
+      expect(violation['safeMetadata'], {'token': '<redacted>', 'amount': 100});
     });
 
     test('serialises operation lifecycle events', () {

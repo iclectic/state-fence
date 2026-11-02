@@ -266,12 +266,7 @@ class GuardedOperation<T> implements Disposable {
     _disposed = true;
     _latestAccepted = null;
     _inFlight = null;
-    _timeline?.add(
-      OwnerDisposedEvent(
-        source: name,
-        timestamp: _clock.now(),
-      ),
-    );
+    _timeline?.add(OwnerDisposedEvent(source: name, timestamp: _clock.now()));
   }
 
   void _safeReport(StateFenceViolation violation) {
