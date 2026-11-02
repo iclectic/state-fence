@@ -13,8 +13,8 @@ An interactive Flutter application that demonstrates StateFence.
 - Stuck loading state, resolved with a `GuardedOperation` timeout.
 
 The checkout screen registers its fence and operations with
-`StateFenceStateMixin` and reports violations through
-`stateFenceReporterForBuildMode` as well as the on-screen inspector.
+`StateFenceStateMixin`. The scripted rejection, stuck state and timeout stay
+on the inspector.
 
 ## Running
 

@@ -87,6 +87,37 @@ class _CheckoutScreenState extends State<CheckoutScreen>
       setState(() => _ui = state);
     }
   }
+
+  Future<void> _pay() async {
+    _apply(fence.transition(const Submitting()));
+    final OperationOutcome<String> outcome = await pay.run(
+      () async => 'receipt-1',
+    );
+    switch (outcome) {
+      case OperationSuccess(:final String value):
+        _apply(fence.transition(Paid(value)));
+      case OperationFailure(:final Object error):
+        _apply(fence.transition(Failed('$error')));
+      case OperationTimedOut(:final Duration timeout):
+        _apply(fence.transition(Failed('Timed out after $timeout.')));
+      case OperationIgnoredAsStale():
+      case OperationIgnoredAsDuplicate():
+        break;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: <Widget>[
+        Text('$_ui'),
+        GestureDetector(
+          onTap: _pay,
+          child: const Text('Pay'),
+        ),
+      ],
+    );
+  }
 }
 ```
 
@@ -113,7 +144,7 @@ owner.dispose();
 
 ## FlutterErrorReporter
 
-`FlutterErrorReporter` forwards each `StateFenceViolation` to `FlutterError.reportError` as a `StateFenceViolationException`. The example uses it together with a collecting reporter so the same violation appears in the Flutter error console and in the on-screen inspector.
+`FlutterErrorReporter` forwards each `StateFenceViolation` to `FlutterError.reportError` as a `StateFenceViolationException`. Pass it when a debug build should show violations in Flutter's error console. The checkout example keeps the scripted rejection, stuck state and timeout on the inspector, so that demo does not look like a crash.
 
 ## Build mode
 

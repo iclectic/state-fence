@@ -329,6 +329,12 @@ class _CheckoutContractScenarioState extends State<CheckoutContractScenario>
           ],
         ),
         const SizedBox(height: 12),
+        Text(
+          'The rejection, the stuck state and the timeout below are the '
+          'scripted demo. They stay on this screen.',
+          style: text.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
         StateFenceInspector(
           timeline: _diag.timeline,
           violations: _diag.reporter.violations,
@@ -345,18 +351,20 @@ String _describe(CheckoutState state) => switch (state) {
       Failed(:final String message) => 'Failed($message)',
     };
 
-/// Sends each violation to the on-screen collector and to Flutter.
+/// Keeps each violation on the inspector and refreshes the screen.
+///
+/// The scripted flow rejects a transition, sticks, and times out on purpose.
+/// Those stay in the inspector. They are not forwarded to Flutter's error
+/// console, so a debug run does not look like a crash.
 class _FanOutReporter implements StateFenceReporter {
   _FanOutReporter({required this.collecting, required this.onReported});
 
   final CollectingReporter collecting;
   final VoidCallback onReported;
-  final StateFenceReporter flutterReporter = stateFenceReporterForBuildMode();
 
   @override
   void report(StateFenceViolation violation) {
     collecting.report(violation);
-    flutterReporter.report(violation);
     onReported();
   }
 }

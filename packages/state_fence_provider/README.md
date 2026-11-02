@@ -20,20 +20,60 @@ The library allows Flutter `>=3.16.0`.
 
 ```dart
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
 import 'package:state_fence/state_fence.dart';
 import 'package:state_fence_provider/state_fence_provider.dart';
 
-stateFenceProvider<PayState>(
-  create: (_) => StateFenceController<PayState>(
-    name: 'pay',
-    initialState: const Idle(),
-    rules: [allow<Idle, Paid>()],
-  ),
-  child: const PayView(),
-);
+sealed class PayState {
+  const PayState();
+}
+
+final class Idle extends PayState {
+  const Idle();
+}
+
+final class Paid extends PayState {
+  const Paid();
+}
+
+class PayView extends StatelessWidget {
+  const PayView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final StateFenceController<PayState> controller =
+        context.watch<StateFenceController<PayState>>();
+    final String label = controller.state is Paid ? 'Paid' : 'Idle';
+    return Column(
+      children: <Widget>[
+        Text(label),
+        GestureDetector(
+          onTap: () => controller.transition(const Paid()),
+          child: const Text('Pay'),
+        ),
+      ],
+    );
+  }
+}
+
+class PayApp extends StatelessWidget {
+  const PayApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return stateFenceProvider<PayState>(
+      create: (_) => StateFenceController<PayState>(
+        name: 'pay',
+        initialState: const Idle(),
+        rules: [allow<Idle, Paid>()],
+      ),
+      child: const PayView(),
+    );
+  }
+}
 ```
 
-Read it with `context.watch<StateFenceController<PayState>>()`. Call `transition` from the controller. The widget rebuilds when the fence accepts.
+`context.watch` comes from `package:provider/provider.dart`. Call `transition` from the controller. The widget rebuilds when the fence accepts.
 
 ## Licence
 

@@ -7,49 +7,85 @@ StateFence is a state-management-neutral correctness toolkit for Dart and Flutte
 ## 30-Second Stale Response Example
 
 ```dart
+import 'dart:async';
+
 import 'package:state_fence/state_fence.dart';
 
-final search = GuardedOperation<List<String>>(
-  name: 'search',
-  policy: OperationPolicy.latestWins,
-);
-
-// User types "a", then "ab", then "abc".
-final slowFuture = search.run(() => repository.search('a'));   // slow
-final fastFuture = search.run(() => repository.search('abc')); // fast
-
-// "abc" returns first and is accepted.
-final fastOutcome = await fastFuture;
-if (fastOutcome case OperationSuccess(:final value)) {
-  emit(SearchState.data(value));
+sealed class CheckoutState {
+  const CheckoutState();
 }
 
-// "a" returns later and is discarded as stale.
-final slowOutcome = await slowFuture;
-// slowOutcome is OperationIgnoredAsStale
+final class Idle extends CheckoutState {
+  const Idle();
+}
+
+final class Submitting extends CheckoutState {
+  const Submitting();
+}
+
+final class Paid extends CheckoutState {
+  const Paid(this.receipt);
+  final String receipt;
+}
+
+Future<void> main() async {
+  final fence = StateFence<CheckoutState>(
+    name: 'checkout',
+    initialState: const Idle(),
+    rules: [
+      allow<Idle, Submitting>(),
+      allow<Submitting, Paid>(),
+    ],
+  );
+  final quote = GuardedOperation<String>(
+    name: 'quote',
+    policy: OperationPolicy.latestWins,
+  );
+
+  CheckoutState ui = const Idle();
+
+  CheckoutState apply(TransitionResult<CheckoutState> result) {
+    if (result case TransitionAccepted(:final state)) return state;
+    return ui;
+  }
+
+  ui = apply(fence.transition(const Submitting()));
+
+  final slow = quote.run(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    return 'slow-receipt';
+  });
+  final fast = quote.run(() async {
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    return 'fast-receipt';
+  });
+
+  switch (await fast) {
+    case OperationSuccess(:final value):
+      ui = apply(fence.transition(Paid(value)));
+    case OperationFailure():
+    case OperationTimedOut():
+    case OperationIgnoredAsStale():
+    case OperationIgnoredAsDuplicate():
+      break;
+  }
+
+  switch (await slow) {
+    case OperationIgnoredAsStale():
+      print('Ignored as stale. UI stays $ui.');
+    case OperationSuccess(:final value):
+      ui = apply(fence.transition(Paid(value)));
+    case OperationFailure():
+    case OperationTimedOut():
+    case OperationIgnoredAsDuplicate():
+      break;
+  }
+}
 ```
 
-Without `latestWins`, the slow "a" response would overwrite the newer "abc" results. StateFence prevents that silently.
+`latestWins` completes the slower quote as `OperationIgnoredAsStale`. Apply `ui` only from `OperationSuccess` when the fence returns `TransitionAccepted`. Leave `ui` unchanged in the stale branch.
 
 ## Installation
-
-These packages are not on pub.dev yet. Clone this repository and let `pubspec_overrides.yaml` resolve the sibling packages. Those override files are for local development. They are not part of a published archive.
-
-From a clone:
-
-```sh
-cd packages/state_fence
-dart pub get
-dart test
-
-cd ../state_fence_flutter/example
-flutter pub get
-flutter run
-```
-
-`packages/state_fence_flutter/pubspec_overrides.yaml` and `packages/state_fence_test/pubspec_overrides.yaml` point `state_fence` at the sibling core. The Flutter example override points both packages at this checkout. `dart pub add state_fence` cannot resolve the packages until they are published.
-
-After publication, the consumer coordinates will be:
 
 ```yaml
 dependencies:
@@ -71,7 +107,7 @@ dev_dependencies:
   state_fence_test: ^0.1.0
 ```
 
-Optional adapters, after `state_fence` is on pub.dev. Each one depends on the core. The core does not depend on them.
+Optional adapters. Each one depends on the core. The core does not depend on them.
 
 ```yaml
 dependencies:
@@ -79,6 +115,24 @@ dependencies:
   state_fence_riverpod: ^0.1.0
   state_fence_provider: ^0.1.0
 ```
+
+## Working in this repository
+
+Clone this repository and let `pubspec_overrides.yaml` resolve the sibling packages. Those override files are for local development. They are not part of a published archive.
+
+From a clone:
+
+```sh
+cd packages/state_fence
+dart pub get
+dart test
+
+cd ../state_fence_flutter/example
+flutter pub get
+flutter run
+```
+
+`packages/state_fence_flutter/pubspec_overrides.yaml` and `packages/state_fence_test/pubspec_overrides.yaml` point `state_fence` at the sibling core. The Flutter example override points both packages at this checkout.
 
 ## Transition Contracts
 
