@@ -130,18 +130,34 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 Use `StateFenceOwner` directly when a controller, rather than a `State`, owns the fence. Call `dispose` once when that controller is finished. `register` throws if the owner has already been disposed.
 
 ```dart
-final StateFenceOwner owner = StateFenceOwner();
+import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_flutter/state_fence_flutter.dart';
 
-final fence = owner.register(
-  StateFence<CheckoutState>(
-    name: 'checkout',
-    initialState: const Idle(),
-    rules: [allow<Idle, Submitting>()],
-    reporter: const FlutterErrorReporter(),
-  ),
-);
+sealed class CheckoutState {
+  const CheckoutState();
+}
 
-owner.dispose();
+final class Idle extends CheckoutState {
+  const Idle();
+}
+
+final class Submitting extends CheckoutState {
+  const Submitting();
+}
+
+void main() {
+  final StateFenceOwner owner = StateFenceOwner();
+  final fence = owner.register(
+    StateFence<CheckoutState>(
+      name: 'checkout',
+      initialState: const Idle(),
+      rules: [allow<Idle, Submitting>()],
+      reporter: const FlutterErrorReporter(),
+    ),
+  );
+  fence.transition(const Submitting());
+  owner.dispose();
+}
 ```
 
 ## FlutterErrorReporter
@@ -153,7 +169,31 @@ owner.dispose();
 `stateFenceReporterForBuildMode` returns `FlutterErrorReporter` for debug and profile, and `DevNullReporter` for release. Profile is included because `kReleaseMode` is false there. Stack traces stay off unless the caller sets `captureStackTrace` on the fence. Pass `release: true` or `release: false` in tests. The core package does not import Flutter or `dart:developer`.
 
 ```dart
-reporter: stateFenceReporterForBuildMode(),
+import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_flutter/state_fence_flutter.dart';
+
+sealed class PayState {
+  const PayState();
+}
+
+final class Idle extends PayState {
+  const Idle();
+}
+
+final class Paid extends PayState {
+  const Paid();
+}
+
+void main() {
+  final fence = StateFence<PayState>(
+    name: 'pay',
+    initialState: const Idle(),
+    rules: [allow<Idle, Paid>()],
+    reporter: stateFenceReporterForBuildMode(),
+  );
+  fence.transition(const Paid());
+  fence.dispose();
+}
 ```
 
 ## Inspector
@@ -161,10 +201,20 @@ reporter: stateFenceReporterForBuildMode(),
 `StateFenceInspector` shows a timeline and a list of violations you already collected. Rebuild it when those change. It does not register a global listener, and it does not send data anywhere.
 
 ```dart
-StateFenceInspector(
-  timeline: timeline,
-  violations: collected,
-)
+import 'package:flutter/widgets.dart';
+import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_flutter/state_fence_flutter.dart';
+
+class PayInspector extends StatelessWidget {
+  PayInspector({super.key});
+
+  final Timeline timeline = Timeline(capacity: 16);
+
+  @override
+  Widget build(BuildContext context) {
+    return StateFenceInspector(timeline: timeline);
+  }
+}
 ```
 
 The checkout screen in the example uses this widget. The other screens keep a private diagnostics panel.

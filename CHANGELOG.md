@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Timeline` bounded ring buffer with configurable capacity, dropped count and filtering by source or event type.
 - `MetadataRedactor` with default sensitive key redaction, custom callback support and recursive redaction. A sensitive key redacts its entire subtree, including nested maps and lists. Redaction is total: maps with non-`String` keys are stringified, non-`List` iterables are converted to lists, and recursion is bounded by `maxDepth` so cyclic or pathologically nested metadata is truncated rather than crashing or hanging.
 - `exportTimelineJson` producing an envelope with `droppedCount` and redacted `events`. Metadata values that JSON cannot represent natively, such as `DateTime`, are encoded with `toString` so a diagnostic export never throws.
+- `ErrorDescriber` on `GuardedOperation`. The default, `describeErrorRuntimeType`, records only the error's runtime type. `describeErrorMessage` opts in to the full message. `exportTimelineJson` writes that description and does not call `toString` on the thrown error, so a secret in an exception message cannot leak by default. The `OperationFailure` returned to the caller still carries the error object.
 - `StateFence.dispose()` and `GuardedOperation.dispose()` with `UseAfterDisposeViolation` reporting.
 - Console example that applies guarded outcomes through `StateFence.transition`, prints a rejected transition, and prints a stuck-state event. Stale and duplicate outcomes leave the UI variable unchanged.
 

@@ -10,16 +10,14 @@ import 'state_fence_owner.dart';
 /// visible as violations rather than silent state changes.
 ///
 /// ```dart
-/// class _MyScreenState extends State<MyScreen> with StateFenceStateMixin {
-///   late final fence = fenceOwner.register(
-///     StateFence<MyState>(name: 'my', initialState: ..., rules: [...]),
+/// class PayScreenState extends State<PayScreen> with StateFenceStateMixin {
+///   late final StateFence<int> fence = fenceOwner.register(
+///     StateFence<int>(
+///       name: 'pay',
+///       initialState: 0,
+///       rules: [allow<int, int>()],
+///     ),
 ///   );
-///
-///   @override
-///   void dispose() {
-///     // fenceOwner.dispose() is called automatically by the mixin.
-///     super.dispose();
-///   }
 /// }
 /// ```
 mixin StateFenceStateMixin<T extends StatefulWidget> on State<T> {

@@ -4,9 +4,14 @@ import 'package:state_fence/state_fence.dart';
 ///
 /// ```dart
 /// final reporter = CollectingReporter();
-/// final fence = StateFence<MyState>(..., reporter: reporter);
+/// final fence = StateFence<Object>(
+///   name: 'count',
+///   initialState: 0,
+///   rules: [allow<int, int>()],
+///   reporter: reporter,
+/// );
 ///
-/// fence.transition(const IllegalState());
+/// fence.transition('no');
 ///
 /// expect(reporter.violations, hasLength(1));
 /// expect(reporter.hasViolations, isTrue);

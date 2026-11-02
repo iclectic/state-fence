@@ -204,6 +204,7 @@ Attach a `Timeline` to the fence and the operation, then call `exportTimelineJso
 ## Limits
 
 - The default reporter is `DevNullReporter`. It is silent. Pass a reporter when you also want violations surfaced. `state_fence_flutter` provides `FlutterErrorReporter` and `stateFenceReporterForBuildMode`, which reports in debug and profile and stays silent in release. `state_fence_test` provides `CollectingReporter` and `ThrowingReporter`.
+- A thrown error is recorded on the timeline as its runtime type. The exception message is not stored, and `exportTimelineJson` does not add it. Pass `errorDescriber: describeErrorMessage` on `GuardedOperation` only when that message is safe to keep. The outcome returned to the caller still carries the error object.
 - A timeout does not cancel the future. Dart futures are not cancellable. The late result is ignored.
 - The fence does not rebuild widgets. Update your own state holder only from `TransitionAccepted`.
 

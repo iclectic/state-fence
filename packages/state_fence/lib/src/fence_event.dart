@@ -119,7 +119,11 @@ final class OperationFailedEvent extends FenceEvent {
   /// The token identifying the invocation.
   final OperationToken token;
 
-  /// A short description of the error. The full error object is not captured.
+  /// The diagnostic text for the error. The error object is not captured.
+  ///
+  /// [GuardedOperation] fills this through its [ErrorDescriber]. The default
+  /// text is the error's runtime type. [exportTimelineJson] copies this
+  /// field and does not call [Object.toString] on the thrown error.
   final String errorDescription;
 
   /// Creates a failed event for [token] described by [errorDescription].

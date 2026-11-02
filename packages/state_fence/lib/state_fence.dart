@@ -6,6 +6,7 @@
 library;
 
 export 'src/disposable.dart';
+export 'src/error_describer.dart';
 export 'src/fence_clock.dart';
 export 'src/fence_event.dart';
 export 'src/fence_scheduler.dart';

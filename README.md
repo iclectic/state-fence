@@ -141,36 +141,48 @@ flutter run
 Declare which state-to-state movements are legal. Illegal transitions produce a structured violation and do not change the current state.
 
 ```dart
+import 'package:state_fence/state_fence.dart';
+
 sealed class CheckoutState {
   const CheckoutState();
 }
 
-final class Idle extends CheckoutState { const Idle(); }
-final class Submitting extends CheckoutState { const Submitting(); }
-final class Success extends CheckoutState { const Success(); }
+final class Idle extends CheckoutState {
+  const Idle();
+}
+
+final class Submitting extends CheckoutState {
+  const Submitting();
+}
+
+final class Success extends CheckoutState {
+  const Success();
+}
+
 final class Failure extends CheckoutState {
   const Failure(this.message);
   final String message;
 }
 
-final fence = StateFence<CheckoutState>(
-  name: 'checkout',
-  initialState: const Idle(),
-  rules: [
-    allow<Idle, Submitting>(),
-    allow<Submitting, Success>(),
-    allow<Submitting, Failure>(),
-    allow<Failure, Submitting>(),
-  ],
-);
+void main() {
+  final fence = StateFence<CheckoutState>(
+    name: 'checkout',
+    initialState: const Idle(),
+    rules: [
+      allow<Idle, Submitting>(),
+      allow<Submitting, Success>(),
+      allow<Submitting, Failure>(),
+      allow<Failure, Submitting>(),
+    ],
+  );
 
-final result = fence.transition(const Submitting());
+  final result = fence.transition(const Submitting());
 
-if (result case TransitionAccepted()) {
-  // State is now Submitting.
-} else if (result case TransitionRejected(:final violation)) {
-  // An illegal transition was attempted.
-  print(violation.reason);
+  if (result case TransitionAccepted()) {
+    print(fence.current.runtimeType);
+  } else if (result case TransitionRejected(:final violation)) {
+    print(violation.reason);
+  }
 }
 ```
 
@@ -187,16 +199,22 @@ Run async work with a concurrency policy so stale or duplicate results cannot si
 Accepts only the newest invocation result. Older in-flight results are discarded as stale. Ideal for search-as-you-type.
 
 ```dart
-final search = GuardedOperation<List<String>>(
-  name: 'search',
-  policy: OperationPolicy.latestWins,
-  timeout: const Duration(seconds: 10),
-);
+import 'package:state_fence/state_fence.dart';
 
-final outcome = await search.run(() => repository.search(query));
+Future<List<String>> searchBooks(String query) async => <String>[query];
 
-if (outcome case OperationSuccess(:final value)) {
-  emit(SearchState.data(value));
+Future<void> main() async {
+  final search = GuardedOperation<List<String>>(
+    name: 'search',
+    policy: OperationPolicy.latestWins,
+    timeout: const Duration(seconds: 10),
+  );
+
+  final outcome = await search.run(() => searchBooks('books'));
+
+  if (outcome case OperationSuccess(:final value)) {
+    print(value);
+  }
 }
 ```
 
@@ -205,15 +223,23 @@ if (outcome case OperationSuccess(:final value)) {
 Ignores new invocations while one is already in flight. Ideal for save and payment buttons.
 
 ```dart
-final pay = GuardedOperation<String>(
-  name: 'pay',
-  policy: OperationPolicy.firstWins,
-);
+import 'package:state_fence/state_fence.dart';
 
-final outcome = await pay.run(() => paymentService.charge());
+Future<String> charge() async => 'receipt-1';
 
-if (outcome case OperationIgnoredAsDuplicate()) {
-  // The user tapped twice; the second tap was ignored.
+Future<void> main() async {
+  final pay = GuardedOperation<String>(
+    name: 'pay',
+    policy: OperationPolicy.firstWins,
+  );
+
+  final first = pay.run(charge);
+  final second = await pay.run(charge);
+  await first;
+
+  if (second case OperationIgnoredAsDuplicate()) {
+    print(second.token.value);
+  }
 }
 ```
 
@@ -222,16 +248,22 @@ if (outcome case OperationIgnoredAsDuplicate()) {
 When a `timeout` is configured, the `run` future resolves with `OperationTimedOut` as soon as the timeout fires. Callers are never left waiting on a stuck operation, and a late result is discarded automatically.
 
 ```dart
-final refresh = GuardedOperation<Feed>(
-  name: 'refresh',
-  policy: OperationPolicy.latestWins,
-  timeout: const Duration(seconds: 10),
-);
+import 'dart:async';
 
-final outcome = await refresh.run(() => repository.fetchFeed());
+import 'package:state_fence/state_fence.dart';
 
-if (outcome case OperationTimedOut(:final timeout)) {
-  emit(FeedState.error('Refresh timed out after $timeout.'));
+Future<void> main() async {
+  final refresh = GuardedOperation<List<String>>(
+    name: 'refresh',
+    policy: OperationPolicy.latestWins,
+    timeout: const Duration(seconds: 10),
+  );
+
+  final outcome = await refresh.run(() => Completer<List<String>>().future);
+
+  if (outcome case OperationTimedOut(:final timeout)) {
+    print('Refresh timed out after $timeout.');
+  }
 }
 ```
 
@@ -242,43 +274,81 @@ Under `firstWins`, a timed-out invocation no longer blocks a retry.
 Declare a maximum duration for transitional states. If the fence stays in the state too long, a `StuckStateViolation` is reported and a `StateStuckEvent` is recorded.
 
 ```dart
-final fence = StateFence<FeedState>(
-  name: 'feed',
-  initialState: const Idle(),
-  rules: [...],
-  stuckStateTimeouts: const {
-    Loading: Duration(seconds: 15),
-    Refreshing: Duration(seconds: 10),
-  },
-);
+import 'package:state_fence/state_fence.dart';
+
+sealed class FeedState {
+  const FeedState();
+}
+
+final class Idle extends FeedState {
+  const Idle();
+}
+
+final class Loading extends FeedState {
+  const Loading();
+}
+
+final class Refreshing extends FeedState {
+  const Refreshing();
+}
+
+void main() {
+  final fence = StateFence<FeedState>(
+    name: 'feed',
+    initialState: const Idle(),
+    rules: [
+      allow<Idle, Loading>(),
+      allow<Idle, Refreshing>(),
+    ],
+    stuckStateTimeouts: const {
+      Loading: Duration(seconds: 15),
+      Refreshing: Duration(seconds: 10),
+    },
+  );
+  print(fence.current.runtimeType);
+}
 ```
 
 Detection is driven by the injectable `FenceScheduler`, so tests advance fake time instead of waiting.
 
 ## Diagnostic Events and Privacy
 
-Attach a `Timeline` to record bounded diagnostic events. Export them as JSON with automatic redaction of sensitive values.
+Attach a `Timeline` to record bounded diagnostic events. Export them as JSON with automatic redaction of sensitive values. A thrown error is recorded as its runtime type. Pass `errorDescriber: describeErrorMessage` only when the exception message is safe to keep. The export writes that description and does not call `toString` on the error.
 
 ```dart
-final timeline = Timeline(capacity: 256);
+import 'package:state_fence/state_fence.dart';
 
-final fence = StateFence<MyState>(
-  name: 'checkout',
-  initialState: const Idle(),
-  rules: [...],
-  timeline: timeline,
-);
+sealed class CheckoutState {
+  const CheckoutState();
+}
 
-final op = GuardedOperation<String>(
-  name: 'pay',
-  policy: OperationPolicy.firstWins,
-  timeline: timeline,
-);
+final class Idle extends CheckoutState {
+  const Idle();
+}
 
-// Later, export with redaction:
-final json = exportTimelineJson(timeline);
-// Sensitive keys like 'password', 'token', 'secret' are automatically
-// replaced with '<redacted>'. Custom redactors are supported.
+final class Submitting extends CheckoutState {
+  const Submitting();
+}
+
+void main() {
+  final timeline = Timeline(capacity: 256);
+  final fence = StateFence<CheckoutState>(
+    name: 'checkout',
+    initialState: const Idle(),
+    rules: [allow<Idle, Submitting>()],
+    timeline: timeline,
+  );
+  final pay = GuardedOperation<String>(
+    name: 'pay',
+    policy: OperationPolicy.firstWins,
+    timeline: timeline,
+  );
+
+  fence.transition(const Submitting());
+  print(exportTimelineJson(timeline));
+  pay.dispose();
+  fence.dispose();
+}
 ```
 
 ### Redaction
@@ -288,11 +358,18 @@ The default `MetadataRedactor` redacts keys such as `password`, `token`, `secret
 Redaction and export are total. Maps with non-`String` keys are stringified, recursion is bounded by `maxDepth` so cyclic metadata is truncated rather than looping, and values that JSON cannot represent natively are encoded with `toString`. Exporting diagnostics never throws because of the shape of the metadata you attached.
 
 ```dart
-const redactor = MetadataRedactor(
-  redactor: myCustomRedactor,
-);
+import 'package:state_fence/state_fence.dart';
 
-final json = exportTimelineJson(timeline, redactor: redactor);
+Object? keepAmount(String key, Object? value) {
+  if (key == 'amount') return value;
+  return null;
+}
+
+void main() {
+  final timeline = Timeline(capacity: 8);
+  final redactor = MetadataRedactor(redactor: keepAmount);
+  print(exportTimelineJson(timeline, redactor: redactor));
+}
 ```
 
 ## Flutter Lifecycle Integration
@@ -300,29 +377,61 @@ final json = exportTimelineJson(timeline, redactor: redactor);
 Use `StateFenceStateMixin` to automatically dispose fences and operations when a `State` is disposed.
 
 ```dart
-class _CheckoutScreenState extends State<CheckoutScreen>
+import 'package:flutter/widgets.dart';
+import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_flutter/state_fence_flutter.dart';
+
+sealed class CheckoutState {
+  const CheckoutState();
+}
+
+final class Idle extends CheckoutState {
+  const Idle();
+}
+
+final class Submitting extends CheckoutState {
+  const Submitting();
+}
+
+final class Paid extends CheckoutState {
+  const Paid(this.receipt);
+  final String receipt;
+}
+
+class CheckoutScreen extends StatefulWidget {
+  const CheckoutScreen({super.key});
+
+  @override
+  State<CheckoutScreen> createState() => CheckoutScreenState();
+}
+
+class CheckoutScreenState extends State<CheckoutScreen>
     with StateFenceStateMixin {
-  late final fence = fenceOwner.register(
+  late final StateFence<CheckoutState> fence = fenceOwner.register(
     StateFence<CheckoutState>(
       name: 'checkout',
       initialState: const Idle(),
       rules: [
         allow<Idle, Submitting>(),
-        allow<Submitting, Success>(),
-        allow<Submitting, Failure>(),
-        allow<Failure, Submitting>(),
+        allow<Submitting, Paid>(),
       ],
     ),
   );
 
-  late final pay = fenceOwner.register(
+  late final GuardedOperation<String> pay = fenceOwner.register(
     GuardedOperation<String>(
       name: 'pay',
       policy: OperationPolicy.firstWins,
     ),
   );
 
-  // fenceOwner.dispose() is called automatically when the State is disposed.
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => fence.transition(Paid(pay.name)),
+      child: Text('${fence.current.runtimeType}'),
+    );
+  }
 }
 ```
 
@@ -331,12 +440,31 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 Forward violations to Flutter's standard error pipeline:
 
 ```dart
-final fence = StateFence<MyState>(
-  name: 'my',
-  initialState: const Idle(),
-  rules: [...],
-  reporter: const FlutterErrorReporter(),
-);
+import 'package:state_fence/state_fence.dart';
+import 'package:state_fence_flutter/state_fence_flutter.dart';
+
+sealed class PayState {
+  const PayState();
+}
+
+final class Idle extends PayState {
+  const Idle();
+}
+
+final class Paid extends PayState {
+  const Paid();
+}
+
+void main() {
+  final fence = StateFence<PayState>(
+    name: 'pay',
+    initialState: const Idle(),
+    rules: [allow<Idle, Paid>()],
+    reporter: const FlutterErrorReporter(),
+  );
+  fence.transition(const Paid());
+  fence.dispose();
+}
 ```
 
 ## Testing
@@ -350,9 +478,25 @@ import 'package:state_fence/state_fence.dart';
 import 'package:state_fence_test/state_fence_test.dart';
 import 'package:test/test.dart';
 
+sealed class CheckoutState {
+  const CheckoutState();
+}
+
+final class Idle extends CheckoutState {
+  const Idle();
+}
+
+final class Loading extends CheckoutState {
+  const Loading();
+}
+
+final class Success extends CheckoutState {
+  const Success();
+}
+
 void main() {
   test('declares the expected transitions', () {
-    final fence = StateFence<MyState>(
+    final fence = StateFence<CheckoutState>(
       name: 'test',
       initialState: const Idle(),
       rules: [allow<Idle, Loading>()],
@@ -364,7 +508,7 @@ void main() {
 
   test('rejects an illegal transition', () {
     final reporter = CollectingReporter();
-    final fence = StateFence<MyState>(
+    final fence = StateFence<CheckoutState>(
       name: 'test',
       initialState: const Idle(),
       rules: [allow<Idle, Loading>()],

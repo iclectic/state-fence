@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'disposable.dart';
+import 'error_describer.dart';
 import 'fence_clock.dart';
 import 'fence_event.dart';
 import 'fence_scheduler.dart';
@@ -29,6 +30,12 @@ import 'violation.dart';
 /// [retry], when set, reruns the action after a failure. It does not retry
 /// timeouts, stale results or duplicates, and it does not turn the operation
 /// into a data client.
+///
+/// A failure recorded on the timeline uses [errorDescriber]. The default,
+/// [describeErrorRuntimeType], stores only the error's runtime type. The
+/// [OperationFailure] returned to the caller still carries the error object.
+/// [exportTimelineJson] writes the describer's text and does not call
+/// [Object.toString] on the thrown error.
 class GuardedOperation<T> implements Disposable {
   /// The name of this operation, used in violations and diagnostics.
   final String name;
@@ -47,6 +54,7 @@ class GuardedOperation<T> implements Disposable {
   final FenceScheduler _scheduler;
   final FenceClock _clock;
   final Timeline? _timeline;
+  final ErrorDescriber _describeError;
 
   OperationToken? _latestAccepted;
   OperationToken? _inFlight;
@@ -63,7 +71,10 @@ class GuardedOperation<T> implements Disposable {
   /// controls timestamps;
   /// when omitted it follows [scheduler] if one was supplied, so a fake
   /// scheduler yields consistent timestamps without extra wiring. [timeline],
-  /// when supplied, records bounded diagnostic events.
+  /// when supplied, records bounded diagnostic events. [errorDescriber]
+  /// turns a thrown error into the text stored on the timeline. It defaults
+  /// to [describeErrorRuntimeType], which omits the exception message. Pass
+  /// [describeErrorMessage] to opt in to the full message.
   GuardedOperation({
     required this.name,
     required this.policy,
@@ -74,6 +85,7 @@ class GuardedOperation<T> implements Disposable {
     FenceScheduler? scheduler,
     FenceClock? clock,
     Timeline? timeline,
+    ErrorDescriber? errorDescriber,
   })  : _tokenGenerator = tokenGenerator ?? MonotonicTokenGenerator(),
         _reporter = reporter ?? const DevNullReporter(),
         _scheduler = scheduler ?? const RealFenceScheduler(),
@@ -81,7 +93,8 @@ class GuardedOperation<T> implements Disposable {
             (scheduler != null
                 ? FenceSchedulerClock(scheduler)
                 : const RealFenceClock()),
-        _timeline = timeline;
+        _timeline = timeline,
+        _describeError = errorDescriber ?? describeErrorRuntimeType;
 
   /// Whether this operation has been disposed.
   @override
@@ -289,7 +302,7 @@ class GuardedOperation<T> implements Disposable {
           source: name,
           timestamp: _clock.now(),
           token: token,
-          errorDescription: result.error.toString(),
+          errorDescription: _descriptionOf(result),
         ),
       );
       await _pause(policy.delayAfter(attempts));
@@ -342,10 +355,16 @@ class GuardedOperation<T> implements Disposable {
         source: name,
         timestamp: _clock.now(),
         token: token,
-        errorDescription: result.error.toString(),
+        errorDescription: _descriptionOf(result),
       ),
     );
     return OperationFailure<T>(token, result.error!, result.stackTrace!);
+  }
+
+  String _descriptionOf(_ActionResult<T> result) {
+    final Object error = result.error!;
+    final StackTrace stackTrace = result.stackTrace!;
+    return _describeError(error, stackTrace);
   }
 
   void _recordStale(OperationToken token, OperationToken supersededBy) {
