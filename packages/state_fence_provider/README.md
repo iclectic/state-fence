@@ -12,7 +12,7 @@ dependencies:
   state_fence_provider: ^0.1.0
 ```
 
-Publish `state_fence` before this package. In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
+In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
 
 The library allows Flutter `>=3.16.0`.
 
@@ -72,6 +72,8 @@ class PayApp extends StatelessWidget {
   }
 }
 ```
+
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
 
 `context.watch` comes from `package:provider/provider.dart`. Call `transition` from the controller. The widget rebuilds when the fence accepts.
 

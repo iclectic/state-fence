@@ -12,7 +12,7 @@ dependencies:
   state_fence_bloc: ^0.1.0
 ```
 
-Publish `state_fence` before this package. In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
+In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
 
 ## Use
 
@@ -32,15 +32,19 @@ final class Paid extends PayState {
   const Paid();
 }
 
-final cubit = StateFenceCubit<PayState>(
-  name: 'pay',
-  initialState: const Idle(),
-  rules: [allow<Idle, Paid>()],
-);
+Future<void> main() async {
+  final cubit = StateFenceCubit<PayState>(
+    name: 'pay',
+    initialState: const Idle(),
+    rules: [allow<Idle, Paid>()],
+  );
 
-cubit.transition(const Paid());
-await cubit.close();
+  cubit.transition(const Paid());
+  await cubit.close();
+}
 ```
+
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
 
 `close` disposes the fence. Pair the cubit with `GuardedOperation` from `state_fence` when the event handler is asynchronous, and call `transition` only for outcomes that may change state.
 

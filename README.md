@@ -85,6 +85,8 @@ Future<void> main() async {
 
 `latestWins` completes the slower quote as `OperationIgnoredAsStale`. Apply `ui` only from `OperationSuccess` when the fence returns `TransitionAccepted`. Leave `ui` unchanged in the stale branch.
 
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
+
 ## Installation
 
 ```yaml
@@ -177,6 +179,8 @@ Every fence and operation returns its result to the caller. Reporting is separat
 ## Guarded Operations
 
 Run async work with a concurrency policy so stale or duplicate results cannot silently overwrite newer state.
+
+`OperationPolicy` also includes `restartable`, `sequential` and `parallel`, and a `GuardedOperation` can take a `RetryPolicy`. The `state_fence` README describes each of them.
 
 ### latestWins
 
@@ -451,7 +455,6 @@ Use `GuardedOperation` with a `timeout` so a stuck refresh call resolves with `O
 - StateFence is not a replacement for Flutter DevTools.
 - `RetryPolicy` reruns one action after a thrown failure. It does not retry a timeout, and it is not a data client.
 - Dart futures are not cancelable. A timeout resolves the outcome immediately and discards the late result, but the underlying work continues until it settles on its own. `restartable` completes the previous future as stale immediately and still does not cancel the action.
-- `allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
 - Conditional transition guards, and policies that carry their own configuration, are outside this release.
 
 ## Packages

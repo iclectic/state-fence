@@ -88,6 +88,8 @@ void main() {
 }
 ```
 
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
+
 Run the checked-in example with `dart test example/state_fence_test_example.dart`.
 
 ## Licence

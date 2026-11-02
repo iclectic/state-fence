@@ -169,6 +169,8 @@ Future<void> main() async {
 }
 ```
 
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
+
 Run it from this package with `dart run example/state_fence_example.dart`. The checked-in example also stops if a step does not produce the expected state.
 
 ## Policies
@@ -202,7 +204,6 @@ Attach a `Timeline` to the fence and the operation, then call `exportTimelineJso
 ## Limits
 
 - The default reporter is `DevNullReporter`. It is silent. Pass a reporter when you also want violations surfaced. `state_fence_flutter` provides `FlutterErrorReporter` and `stateFenceReporterForBuildMode`, which reports in debug and profile and stays silent in release. `state_fence_test` provides `CollectingReporter` and `ThrowingReporter`.
-- `allow<F, T>()` matches `runtimeType`. It does not check the state hierarchy at compile time.
 - A timeout does not cancel the future. Dart futures are not cancellable. The late result is ignored.
 - The fence does not rebuild widgets. Update your own state holder only from `TransitionAccepted`.
 

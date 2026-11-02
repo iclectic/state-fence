@@ -121,6 +121,8 @@ class _CheckoutScreenState extends State<CheckoutScreen>
 }
 ```
 
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
+
 `_ui` changes only inside the `TransitionAccepted` branch. A rejection leaves it as it is.
 
 ## StateFenceOwner

@@ -12,7 +12,7 @@ dependencies:
   state_fence_riverpod: ^0.1.0
 ```
 
-Publish `state_fence` before this package. In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
+In the StateFence repository, `pubspec_overrides.yaml` resolves the sibling core. That file is excluded from the published archive.
 
 This package depends on `riverpod` 2.x and the `Notifier` API. A Flutter app can depend on `flutter_riverpod` as well. The mixin itself does not import Flutter.
 
@@ -48,7 +48,15 @@ class PayNotifier extends Notifier<PayState>
     return initial;
   }
 }
+
+final payProvider = NotifierProvider<PayNotifier, PayState>(PayNotifier.new);
+
+void markPaid(Ref ref) {
+  ref.read(payProvider.notifier).transition(const Paid());
+}
 ```
+
+`allow<F, T>()` does not enforce the state-domain bound at compile time. Rules are checked at transition time by runtime type.
 
 Use `GuardedOperation` from `state_fence` for asynchronous work, and call `transition` only for outcomes that may change state.
 
